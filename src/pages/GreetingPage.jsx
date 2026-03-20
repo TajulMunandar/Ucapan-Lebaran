@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Copy, QrCode, Share2, Loader2, AlertCircle, ExternalLink, Lock } from 'lucide-react'
+import { Copy, QrCode, Share2, Loader2, AlertCircle, ExternalLink, Lock, Play, Pause } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { GreetingTemplate } from '../components/templates'
 import { QRCodeSVG } from 'qrcode.react'
@@ -16,6 +16,19 @@ export default function GreetingPage() {
   const [error, setError] = useState(null)
   const [showQR, setShowQR] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef(null)
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/ucapan/${slug}` : ''
 
@@ -193,9 +206,32 @@ export default function GreetingPage() {
 
       {/* Music Player (if music is selected) */}
       {greeting.music_url && (
-        <audio autoPlay loop className="hidden">
-          <source src={greeting.music_url} type="audio/mpeg" />
-        </audio>
+        <>
+          <audio
+            ref={audioRef}
+            loop
+            onEnded={() => setIsPlaying(false)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+          >
+            <source src={greeting.music_url} type="audio/mpeg" />
+          </audio>
+          
+          {/* Music Control Button */}
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 2 }}
+            onClick={toggleMusic}
+            className="fixed top-4 right-4 z-50 w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center shadow-lg hover:bg-primary-600 transition-colors"
+          >
+            {isPlaying ? (
+              <Pause className="w-6 h-6 text-white" />
+            ) : (
+              <Play className="w-6 h-6 text-white ml-1" />
+            )}
+          </motion.button>
+        </>
       )}
 
       {/* Bottom padding for fixed buttons */}
