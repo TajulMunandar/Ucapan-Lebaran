@@ -112,7 +112,7 @@ export default function GreetingForm({ onSuccess }) {
     e.preventDefault()
     
     // Validation
-    if (!formData.sender_name.trim() || !formData.receiver_name.trim()) {
+    if (!formData.sender_name.trim() ) {
       alert('Nama pengirim dan penerima wajib diisi')
       return
     }
@@ -225,16 +225,15 @@ export default function GreetingForm({ onSuccess }) {
         
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Nama Penerima *
+            Nama Penerima (Opsional)
           </label>
           <input
             type="text"
             name="receiver_name"
             value={formData.receiver_name}
             onChange={handleInputChange}
-            placeholder="Nama yang receberá"
+            placeholder="Nama yang recibirá"
             className="input-field"
-            required
           />
         </div>
       </div>

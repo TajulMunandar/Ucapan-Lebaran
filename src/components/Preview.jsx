@@ -61,7 +61,7 @@ export default function Preview({ greeting, onBack }) {
                   Link belum aktif
                 </p>
                 <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">
-                  Selesaikan pembayaran Rp 5.000 untuk mendapatkan link share yang bisa dikirim ke keluarga & teman.
+                  Selesaikan pembayaran Rp 1.000 untuk mendapatkan link share yang bisa dikirim ke keluarga & teman.
                 </p>
               </div>
             </div>
@@ -72,7 +72,7 @@ export default function Preview({ greeting, onBack }) {
               onClick={handleGoToPayment}
               className="flex-1 btn-primary"
             >
-              Bayar Sekarang - Rp 5.000
+              Bayar Sekarang - Rp 1.000
             </button>
           </div>
 

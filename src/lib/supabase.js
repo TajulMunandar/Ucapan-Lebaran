@@ -27,12 +27,12 @@ export const TEMPLATES = [
 // Music options
 export const MUSIC_OPTIONS = [
   { id: 'none', name: 'Tanpa Musik', url: null },
-  { id: 'ketipung', name: 'Ketipak Ketipung', url: '/src/assets/Aisha Retno, Aziz Harun - Ketipak Ketipung Raya Official Video.mp3' },
-  { id: 'takbir', name: 'Takbirap', url: '/src/assets/ECKO SHOW - TAKBIRAP ft. BOSSVHINO & AIL [lyrics video].mp3' },
-  { id: 'eidun', name: 'Eidun Saeed', url: '/src/assets/Eidun Saeed with Maher Zain & Mesut Kurtis ☀️ MiniMuslims.mp3' },
-  { id: 'eid', name: 'Eidun Mubarak', url: '/src/assets/Maher Zain - Eidun Mubarak _ Official Music Video.mp3' },
-  { id: 'maulana', name: 'Ya Maulana', url: '/src/assets/YA MAULANA - SABYAN (OFFICIAL MUSIC VIDEO).mp3' },
+  { id: 'ketipung', name: 'Ketipak Ketipung', url: '/Aisha Retno, Aziz Harun - Ketipak Ketipung Raya Official Video.mp3' },
+  { id: 'takbir', name: 'Takbirap', url: '/ECKO SHOW - TAKBIRAP ft. BOSSVHINO & AIL [lyrics video].mp3' },
+  { id: 'eidun', name: 'Eidun Saeed', url: '/Eidun Saeed with Maher Zain & Mesut Kurtis ☀️ MiniMuslims.mp3' },
+  { id: 'eid', name: 'Eidun Mubarak', url: '/Maher Zain - Eidun Mubarak _ Official Music Video.mp3' },
+  { id: 'maulana', name: 'Ya Maulana', url: '/YA MAULANA - SABYAN (OFFICIAL MUSIC VIDEO).mp3' },
 ]
 
 // Pricing
-export const PRICE_IDR = 5000 // Rp 5,000
+export const PRICE_IDR = 1000 // Rp 1,000

@@ -232,10 +232,38 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { name: 'Elegant', description: 'Klasik & Elegan', color: 'from-amber-400 to-rose-400' },
-              { name: 'Islamic', description: 'Nuansa Islami', color: 'from-green-500 to-emerald-600' },
-              { name: 'Minimalist', description: 'Sederhana', color: 'from-gray-400 to-gray-600' },
-              { name: 'Fun', description: 'Warna-warni', color: 'from-pink-400 via-purple-400 to-yellow-400' },
+              { 
+                name: 'Elegant', 
+                description: 'Klasik & Elegan', 
+                gradient: 'from-slate-900 via-purple-900 to-slate-900',
+                accent: 'amber',
+                text: 'Eid Mubarak',
+                subtext: 'Selamat Hari Raya'
+              },
+              { 
+                name: 'Islamic', 
+                description: 'Nuansa Islami', 
+                gradient: 'from-green-950 via-emerald-900 to-green-950',
+                accent: 'yellow',
+                text: 'عيد مبارك',
+                subtext: 'Eid Mubarak'
+              },
+              { 
+                name: 'Minimalist', 
+                description: 'Sederhana', 
+                gradient: 'from-slate-50 via-white to-slate-100',
+                accent: 'amber',
+                text: 'Eid Mubarak',
+                subtext: 'Hari Raya'
+              },
+              { 
+                name: 'Fun', 
+                description: 'Warna-warni', 
+                gradient: 'from-indigo-600 via-purple-600 to-pink-500',
+                accent: 'yellow',
+                text: 'EID MUBARAK!',
+                subtext: 'Hari Raya 1447 H'
+              },
             ].map((template, index) => (
               <motion.div
                 key={template.name}
@@ -243,15 +271,54 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group relative overflow-hidden rounded-3xl aspect-[3/4] cursor-pointer"
+                whileHover={{ y: -8 }}
+                className="group relative overflow-hidden rounded-3xl cursor-pointer"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${template.color}`} />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-                  <h3 className="font-display text-2xl font-bold mb-2">{template.name}</h3>
-                  <p className="text-white/80 text-sm">{template.description}</p>
+                {/* Preview Card */}
+                <div className={`relative aspect-[3/4] bg-gradient-to-br ${template.gradient} overflow-hidden`}>
+                  {/* Decorative elements */}
+                  <div className="absolute inset-0 opacity-30">
+                    <div className="absolute top-4 left-4 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                    <div className="absolute bottom-4 right-4 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+                  </div>
+                  
+                  {/* Template preview content */}
+                  <div className="relative z-10 h-full flex flex-col items-center justify-center p-6 text-white">
+                    {template.name === 'Islamic' && (
+                      <p className="font-arabic text-3xl mb-2 text-amber-300">🎉</p>
+                    )}
+                    <h3 className={`font-display text-2xl md:text-3xl font-bold mb-2 ${template.name === 'Fun' ? 'text-yellow-300' : 'text-white'}`}>
+                      {template.text}
+                    </h3>
+                    <p className="text-white/80 text-sm">{template.subtext}</p>
+                    
+                    {/* Sample names preview */}
+                    <div className="mt-6 text-center">
+                      <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Dari</p>
+                      <p className="text-sm font-medium">Nama Anda</p>
+                      <p className="text-lg my-2 text-white/40">↓</p>
+                      <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Untuk</p>
+                      <p className="text-sm font-medium">Nama Keluarga</p>
+                    </div>
+                  </div>
+                  
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button className="bg-white text-gray-900 px-6 py-3 rounded-full font-semibold transform scale-90 group-hover:scale-100 transition-transform">
+                      Pilih Template
+                    </button>
+                  </div>
                 </div>
-                <div className="absolute inset-0 border-2 border-white/20 rounded-3xl m-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                {/* Template Info */}
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-b-3xl shadow-lg">
+                  <h3 className="font-display text-lg font-bold text-gray-800 dark:text-white">
+                    {template.name}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    {template.description}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -312,11 +379,11 @@ export default function HomePage() {
                 <p className="text-gray-500 dark:text-gray-400 mb-2">Per ucapan</p>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-bold text-gray-800 dark:text-white">Rp</span>
-                  <span className="text-5xl font-bold text-primary-600 dark:text-primary-400">5</span>
+                  <span className="text-5xl font-bold text-primary-600 dark:text-primary-400">1</span>
                   <span className="text-xl text-gray-500">.000</span>
                 </div>
                 <p className="text-sm text-gray-400 mt-2">
-                  Sekarang dengan diskon 50%!
+                  Sekarang dengan diskon 90%!
                 </p>
               </div>
 
