@@ -60,7 +60,7 @@ export default function HomePage() {
               </motion.div>
 
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 dark:text-white mb-6 leading-tight">
-                Kirim Ucapan Lebорон
+                Kirim Ucapan Lebaran
                 <span className="text-gradient block">Yang Spesial</span>
               </h1>
 
