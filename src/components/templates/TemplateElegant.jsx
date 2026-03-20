@@ -111,7 +111,7 @@ export default function TemplateElegant({ data, isPreview = false }) {
               Mohon maaf lahir dan batin
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              Diberangkatkan pada tanggal 1 Syawal 1446 H
+              Diberangkatkan pada tanggal 1 Syawal 1447 H
             </p>
           </motion.div>
         </motion.div>

@@ -80,7 +80,7 @@ export default function Testimonials() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ delay: index * 0.1 }}
-            className="card card-hover"
+            className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-6 card-hover"
           >
             {/* Quote icon */}
             <div className="flex items-start gap-3 mb-4">

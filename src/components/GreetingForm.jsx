@@ -1,12 +1,15 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, Music, Palette, Send, Loader2, X, Image as ImageIcon, Check } from 'lucide-react'
+import { Upload, Music, Palette, Send, Loader2, X, Image as ImageIcon, Check, Volume2, VolumeX, FileAudio } from 'lucide-react'
 import { useGreeting } from '../context/GreetingContext'
 import { TEMPLATES, MUSIC_OPTIONS, PRICE_IDR } from '../lib/supabase'
 
 export default function GreetingForm({ onSuccess }) {
   const { createGreeting, uploadPhoto, loading, error } = useGreeting()
   const fileInputRef = useRef(null)
+  const audioRef = useRef(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentMusicUrl, setCurrentMusicUrl] = useState(null)
   
   const [formData, setFormData] = useState({
     sender_name: '',
@@ -14,6 +17,8 @@ export default function GreetingForm({ onSuccess }) {
     message: '',
     template: 'elegant',
     music: 'none',
+    customMusic: null,
+    customMusicPreview: null,
     photo: null,
     photoPreview: null,
   })
@@ -56,6 +61,53 @@ export default function GreetingForm({ onSuccess }) {
     }
   }
 
+  const handleMusicSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        alert('Please select an audio file')
+        return
+      }
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB')
+        return
+      }
+      
+      const previewUrl = URL.createObjectURL(file)
+      setFormData(prev => ({
+        ...prev,
+        customMusic: file,
+        customMusicPreview: previewUrl,
+        music: 'custom'
+      }))
+      
+      // Auto-play custom music
+      if (audioRef.current) {
+        audioRef.current.src = previewUrl
+        audioRef.current.play().catch(err => console.log('Audio play error:', err))
+        setCurrentMusicUrl(previewUrl)
+        setIsPlaying(true)
+      }
+    }
+  }
+
+  const removeCustomMusic = () => {
+    if (formData.customMusicPreview) {
+      URL.revokeObjectURL(formData.customMusicPreview)
+    }
+    setFormData(prev => ({ ...prev, customMusic: null, customMusicPreview: null, music: 'none' }))
+    audioRef.current?.pause()
+    setIsPlaying(false)
+    setCurrentMusicUrl(null)
+    if (musicInputRef.current) {
+      musicInputRef.current.value = ''
+    }
+  }
+
+  const musicInputRef = useRef(null)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -67,14 +119,21 @@ export default function GreetingForm({ onSuccess }) {
 
     try {
       let photoUrl = null
+      let musicUrl = null
       
       // Upload photo if exists
       if (formData.photo) {
         photoUrl = await uploadPhoto(formData.photo)
       }
 
-      // Get music URL
-      const musicOption = MUSIC_OPTIONS.find(m => m.id === formData.music)
+      // Upload custom music if exists
+      if (formData.customMusic) {
+        musicUrl = await uploadPhoto(formData.customMusic)
+      } else {
+        // Get music URL from predefined options
+        const musicOption = MUSIC_OPTIONS.find(m => m.id === formData.music)
+        musicUrl = musicOption?.url
+      }
       
       // Create greeting
       const greeting = await createGreeting({
@@ -83,7 +142,7 @@ export default function GreetingForm({ onSuccess }) {
         message: formData.message.trim() || 'Mohon maaf lahir dan batin',
         template: formData.template,
         photo_url: photoUrl,
-        music_url: musicOption?.url,
+        music_url: musicUrl,
       })
 
       // Call success callback with greeting data
@@ -245,17 +304,108 @@ export default function GreetingForm({ onSuccess }) {
             <button
               key={music.id}
               type="button"
-              onClick={() => setFormData(prev => ({ ...prev, music: music.id }))}
+              onClick={() => {
+                setFormData(prev => ({ ...prev, music: music.id }))
+                
+                // Auto-play music when selected
+                if (music.url && audioRef.current) {
+                  audioRef.current.src = music.url
+                  audioRef.current.play().catch(err => console.log('Audio play error:', err))
+                  setCurrentMusicUrl(music.url)
+                  setIsPlaying(true)
+                } else if (!music.url) {
+                  // Stop playing if "no music" is selected
+                  audioRef.current?.pause()
+                  setIsPlaying(false)
+                  setCurrentMusicUrl(null)
+                }
+              }}
               className={`p-3 rounded-xl border-2 transition-all duration-200 text-sm ${
                 formData.music === music.id
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                  ? 'border-primary-500 bg-primary-500 text-white'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 text-white'
               }`}
             >
               {music.name}
             </button>
           ))}
+          
+          {/* Custom music upload button */}
+          <button
+            type="button"
+            onClick={() => musicInputRef.current?.click()}
+            className={`p-3 rounded-xl border-2 transition-all duration-200 text-sm flex items-center justify-center gap-2 ${
+              formData.music === 'custom'
+                ? 'border-primary-500 bg-primary-500 text-white'
+                : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 text-white'
+            }`}
+          >
+            <Upload className="w-4 h-4" />
+            <span>Upload Musik</span>
+          </button>
         </div>
+        
+        {/* Custom music file input */}
+        <input
+          ref={musicInputRef}
+          type="file"
+          accept="audio/*"
+          onChange={handleMusicSelect}
+          className="hidden"
+        />
+        
+        {/* Custom music preview */}
+        {formData.customMusicPreview && (
+          <div className="mt-3 flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
+            <FileAudio className="w-5 h-5 text-primary-500" />
+            <div className="flex-1 truncate">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                {formData.customMusic?.name}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={removeCustomMusic}
+              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        
+        {/* Audio element for preview */}
+        <audio ref={audioRef} preload="auto" />
+        
+        {/* Music controls */}
+        {currentMusicUrl && (
+          <div className="mt-3 flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+            {isPlaying ? (
+              <Volume2 className="w-5 h-5 text-primary-500" />
+            ) : (
+              <VolumeX className="w-5 h-5 text-gray-400" />
+            )}
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {MUSIC_OPTIONS.find(m => m.id === formData.music)?.name}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (isPlaying) {
+                  audioRef.current?.pause()
+                  setIsPlaying(false)
+                } else {
+                  audioRef.current?.play()
+                  setIsPlaying(true)
+                }
+              }}
+              className="px-3 py-1 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+            >
+              {isPlaying ? 'Pause' : 'Play'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Price Info */}
@@ -264,7 +414,7 @@ export default function GreetingForm({ onSuccess }) {
           <div>
             <p className="font-medium text-gray-800 dark:text-white">Harga</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              1x生成 link unik
+              1x generate link unik
             </p>
           </div>
           <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">

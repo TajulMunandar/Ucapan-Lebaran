@@ -51,7 +51,7 @@ export default function TemplateMinimalist({ data, isPreview = false }) {
             className="text-center mb-10"
           >
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400 mb-4">
-              Eid Al-Fitr 1446 H
+              Eid Al-Fitr 1447 H
             </p>
             <h1 className="font-display text-4xl md:text-5xl font-light text-gray-900 dark:text-white">
               {data.sender_name}

@@ -68,7 +68,7 @@ export default function TemplateIslamic({ data, isPreview = false }) {
               transition={{ delay: 0.5 }}
               className="text-islamic-gold/80 text-lg tracking-widest"
             >
-              1 SYAWAL 1446 H
+              1 SYAWAL 1447 H
             </motion.p>
           </motion.div>
         </div>

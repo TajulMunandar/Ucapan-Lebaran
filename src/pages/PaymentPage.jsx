@@ -194,7 +194,7 @@ export default function PaymentPage() {
 
     } catch (err) {
       console.error('Confirm payment error:', err)
-      setError(err.message || 'Terjadi kesalahan saat提交bukti pembayaran')
+      setError(err.message || 'Terjadi kesalahan saat upload bukti pembayaran')
     } finally {
       setSubmitting(false)
     }
@@ -301,7 +301,7 @@ export default function PaymentPage() {
                 className="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 p-4 rounded-xl flex items-center gap-2"
               >
                 <Clock className="w-5 h-5 flex-shrink-0" />
-                <span>Bukti pembayaran已提交. Mohon tunggu verifikasi dari admin.</span>
+                <span>Bukti pembayaran sudah diupload. Mohon tunggu verifikasi dari admin.</span>
               </motion.div>
             )}
 

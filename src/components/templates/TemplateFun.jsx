@@ -85,7 +85,7 @@ export default function TemplateFun({ data, isPreview = false }) {
             transition={{ delay: 0.7 }}
             className="text-white/90 text-xl font-medium"
           >
-            Hari Raya胶 1446 H
+            Hari Raya胶 1447 H
           </motion.p>
         </motion.div>
       </div>

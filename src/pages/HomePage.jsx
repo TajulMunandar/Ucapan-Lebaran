@@ -56,7 +56,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-4 py-2 rounded-full text-sm font-medium mb-6"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Eid Al-Fitr 1446 H</span>
+                <span>Eid Al-Fitr 1447 H</span>
               </motion.div>
 
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 dark:text-white mb-6 leading-tight">
@@ -196,7 +196,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="card card-hover"
+                className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-6 card-hover"
               >
                 <div className={`w-14 h-14 rounded-2xl ${feature.color} flex items-center justify-center mb-4`}>
                   <feature.icon className="w-7 h-7" />
@@ -312,7 +312,7 @@ export default function HomePage() {
                 <p className="text-gray-500 dark:text-gray-400 mb-2">Per ucapan</p>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-bold text-gray-800 dark:text-white">Rp</span>
-                  <span className="text-5xl font-bold text-primary-600 dark:text-primary-400">15</span>
+                  <span className="text-5xl font-bold text-primary-600 dark:text-primary-400">5</span>
                   <span className="text-xl text-gray-500">.000</span>
                 </div>
                 <p className="text-sm text-gray-400 mt-2">
