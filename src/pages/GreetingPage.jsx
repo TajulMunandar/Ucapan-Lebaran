@@ -63,7 +63,7 @@ export default function GreetingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-islamic-light dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -78,7 +78,7 @@ export default function GreetingPage() {
 
   if (error || !greeting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-islamic-light dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

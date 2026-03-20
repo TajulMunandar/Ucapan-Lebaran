@@ -3,7 +3,7 @@ import { Sparkles, Calendar, Heart, HandHeart, Moon, Star } from 'lucide-react'
 
 export default function TemplateMinimalist({ data, isPreview = false }) {
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 ${isPreview ? 'watermark-preview' : ''}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 ${isPreview ? 'watermark-preview' : ''}`}>
       {/* Subtle pattern background */}
       <div className="fixed inset-0 opacity-30 dark:opacity-10">
         <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-amber-200/30 to-transparent rounded-full blur-3xl" />
