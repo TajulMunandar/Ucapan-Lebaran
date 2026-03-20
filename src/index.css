@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #fef7ee;
+  --color-primary-100: #fdedd6;
+  --color-primary-200: #fad7ac;
+  --color-primary-300: #f7ba78;
+  --color-primary-400: #f59643;
+  --color-primary-500: #f37d23;
+  --color-primary-600: #e86112;
+  --color-primary-700: #c44a0e;
+  --color-primary-800: #9f3c11;
+  --color-primary-900: #823212;
+  --color-primary-950: #451a07;
+  
+  --color-islamic-gold: #d4a853;
+  --color-islamic-dark: #1a2e1a;
+  --color-islamic-light: #f8f6f0;
+  
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-arabic: 'Amiri', serif;
+  
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-slide-up: slideUp 0.5s ease-out;
+  --animate-scale-in: scaleIn 0.3s ease-out;
+  --animate-float: float 3s ease-in-out infinite;
+  
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes scaleIn {
+    0% { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  --shadow-soft: 0 4px 30px rgba(0, 0, 0, 0.08);
+  --shadow-soft-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px rgba(212, 168, 83, 0.3);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #333;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .dark body {
+    background-color: #111827;
+    color: #f3f4f6;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: #f37d23;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(243, 125, 35, 0.4);
+  }
+  
+  .btn-primary:hover {
+    background-color: #e86112;
+    transform: scale(0.98);
+  }
+  
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .btn-secondary {
+    background-color: white;
+    color: #333;
+    padding: 0.75rem 1.5rem;
+    border-radius: 1rem;
+    font-weight: 600;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    border-color: #f37d23;
+    color: #f37d23;
+    transform: scale(0.98);
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s;
+    outline: none;
+    background-color: white;
+  }
+  
+  .input-field:focus {
+    border-color: #f37d23;
+    box-shadow: 0 0 0 3px rgba(243, 125, 35, 0.2);
+  }
+  
+  .card {
+    background-color: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+  }
+  
+  .card-hover {
+    transition: all 0.3s;
+  }
+  
+  .card-hover:hover {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+  }
+  
+  .gradient-islamic {
+    background: linear-gradient(to right, #f37d23, #d4a853, #f37d23);
+  }
+  
+  .text-gradient {
+    background: linear-gradient(to right, #e86112, #d4a853);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-arabic {
+    font-family: 'Amiri', serif;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+  
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+  
+  .shadow-soft {
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+  }
+  
+  .shadow-soft-lg {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(212, 168, 83, 0.3);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #f7ba78;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #f59643;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(243, 125, 35, 0.2);
+  color: #78350f;
+}
+
+/* Watermark */
+.watermark-preview {
+  position: relative;
+}
+
+.watermark-preview::after {
+  content: 'Preview – Unlock untuk mendapatkan link share';
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  color: #9ca3af;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(4px);
+}
