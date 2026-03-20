@@ -417,14 +417,14 @@ export default function HomePage() {
               <h4 className="font-semibold mb-4">Hubungi Kami</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li>hello@greetease.id</li>
-                <li>WhatsApp: +62 812 3456 7890</li>
-                <li>Instagram: @greetease.id</li>
+                <li>WhatsApp: +62 895-6255-06370 </li>
+                <li>Instagram: @devdadakan.id</li>
               </ul>
             </div>
           </div>
           
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
-            <p>© 2026 GreetEase. All rights reserved.</p>
+            <p>© 2026 Developer Dadakan. All rights reserved.</p>
           </div>
         </div>
       </footer>
