@@ -56,14 +56,19 @@ export default function TemplateMinimalist({ data, isPreview = false }) {
             <h1 className="font-display text-4xl md:text-5xl font-light text-gray-900 dark:text-white">
               {data.sender_name}
             </h1>
-            <div className="flex items-center justify-center gap-4 my-4">
-              <div className="w-4 h-px bg-gray-300 dark:bg-gray-700" />
-              <span className="text-gray-400 text-sm">to</span>
-              <div className="w-4 h-px bg-gray-300 dark:bg-gray-700" />
-            </div>
-            <h2 className="font-display text-4xl md:text-5xl font-light text-gray-900 dark:text-white">
-              {data.receiver_name}
-            </h2>
+            {data.receiver_name && (
+              <>
+                <div className="flex items-center justify-center gap-4 my-4">
+                  <div className="w-4 h-px bg-gray-300 dark:bg-gray-700" />
+                  <span className="text-gray-400 text-sm">to</span>
+                  <div className="w-4 h-px bg-gray-300 dark:bg-gray-700" />
+                </div>
+
+                <h2 className="font-display text-4xl md:text-5xl font-light text-gray-900 dark:text-white">
+                  {data.receiver_name}
+                </h2>
+              </>
+            )}
           </motion.div>
 
           {/* Message - Clean typography */}

@@ -117,16 +117,21 @@ export default function TemplateIslamic({ data, isPreview = false }) {
                 <div className="w-8 h-px bg-gradient-to-l from-transparent to-islamic-gold" />
               </div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-              >
-                <span className="text-islamic-gold/60 text-sm uppercase tracking-widest">Untuk</span>
-                <h3 className="font-display text-3xl md:text-4xl font-bold text-islamic-gold">
-                  {data.receiver_name}
-                </h3>
-              </motion.div>
+              {data.receiver_name && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <span className="text-islamic-gold/60 text-sm uppercase tracking-widest">
+                    Untuk
+                  </span>
+                  <h3 className="font-display text-3xl md:text-4xl font-bold text-islamic-gold">
+                    {data.receiver_name}
+                  </h3>
+                </motion.div>
+              )}
+              
             </div>
 
             {/* Message card */}

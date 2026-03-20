@@ -136,15 +136,18 @@ export default function TemplateFun({ data, isPreview = false }) {
                 {data.sender_name}
               </h2>
             </div>
-            
-            <div className="text-3xl">⬇️</div>
-            
-            <div className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl px-8 py-4 shadow-lg">
-              <p className="text-sm text-white/80 uppercase font-medium">Untuk</p>
-              <h3 className="font-display text-3xl md:text-4xl font-bold text-white">
-                {data.receiver_name}
-              </h3>
-            </div>
+            {data.receiver_name && (
+              <>
+                <div className="text-3xl">⬇️</div>
+
+                <div className="inline-block bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl px-8 py-4 shadow-lg">
+                  <p className="text-sm text-white/80 uppercase font-medium">Untuk</p>
+                  <h3 className="font-display text-3xl md:text-4xl font-bold text-white">
+                    {data.receiver_name}
+                  </h3>
+                </div>
+              </>
+            )}
           </motion.div>
 
           {/* Message in colorful card */}

@@ -14,11 +14,10 @@ export function GreetingProvider({ children }) {
     setError(null)
     
     try {
-      const slug = generateSlug(data.receiver_name)
+      const slug = generateSlug(data.sender_name)
       
       const greetingData = {
         sender_name: data.sender_name,
-        receiver_name: data.receiver_name,
         message: data.message,
         template: data.template,
         photo_url: data.photo_url,
@@ -26,15 +25,15 @@ export function GreetingProvider({ children }) {
         slug,
         is_paid: false,
       }
-
+  
       const { data: created, error: insertError } = await supabase
         .from('greetings')
         .insert(greetingData)
         .select()
         .single()
-
+  
       if (insertError) throw insertError
-
+  
       setGreeting(created)
       return created
     } catch (err) {

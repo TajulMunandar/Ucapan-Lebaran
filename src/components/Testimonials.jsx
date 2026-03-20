@@ -93,9 +93,9 @@ export default function Testimonials() {
                 <h4 className="font-medium text-gray-800 dark:text-white">
                   {testimonial.sender_name}
                 </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                {/* <p className="text-sm text-gray-500 dark:text-gray-400">
                   Untuk {testimonial.receiver_name}
-                </p>
+                </p> */}
               </div>
             </div>
 

@@ -13,7 +13,7 @@ export default function GreetingForm({ onSuccess }) {
   
   const [formData, setFormData] = useState({
     sender_name: '',
-    receiver_name: '',
+    // receiver_name: '',
     message: '',
     template: 'elegant',
     music: 'none',
@@ -86,10 +86,10 @@ export default function GreetingForm({ onSuccess }) {
       // Auto-play custom music
       if (audioRef.current) {
         audioRef.current.src = previewUrl
-        audioRef.current.play().catch(err => console.log('Audio play error:', err))
-        setCurrentMusicUrl(previewUrl)
-        setIsPlaying(true)
+        audioRef.current.load()
       }
+      setCurrentMusicUrl(previewUrl)
+      setIsPlaying(false) // user klik Play manual di mobile
     }
   }
 
@@ -112,8 +112,8 @@ export default function GreetingForm({ onSuccess }) {
     e.preventDefault()
     
     // Validation
-    if (!formData.sender_name.trim() || !formData.receiver_name.trim()) {
-      alert('Nama pengirim dan penerima wajib diisi')
+    if (!formData.sender_name.trim()) {
+      alert('Nama pengirim wajib diisi')
       return
     }
 
@@ -138,7 +138,7 @@ export default function GreetingForm({ onSuccess }) {
       // Create greeting
       const greeting = await createGreeting({
         sender_name: formData.sender_name.trim(),
-        receiver_name: formData.receiver_name.trim(),
+        // receiver_name: formData.receiver_name.trim(),
         message: formData.message.trim() || 'Mohon maaf lahir dan batin',
         template: formData.template,
         photo_url: photoUrl,
@@ -223,7 +223,7 @@ export default function GreetingForm({ onSuccess }) {
           />
         </div>
         
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Nama Penerima *
           </label>
@@ -236,7 +236,7 @@ export default function GreetingForm({ onSuccess }) {
             className="input-field"
             required
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Message */}
@@ -305,20 +305,20 @@ export default function GreetingForm({ onSuccess }) {
               key={music.id}
               type="button"
               onClick={() => {
-                setFormData(prev => ({ ...prev, music: music.id }))
-                
-                // Auto-play music when selected
                 if (music.url && audioRef.current) {
+                  audioRef.current.pause()
                   audioRef.current.src = music.url
-                  audioRef.current.play().catch(err => console.log('Audio play error:', err))
+                  audioRef.current.load()
+                  audioRef.current.play()
+                    .then(() => setIsPlaying(true))
+                    .catch(err => console.log('Audio error:', err))
                   setCurrentMusicUrl(music.url)
-                  setIsPlaying(true)
                 } else if (!music.url) {
-                  // Stop playing if "no music" is selected
                   audioRef.current?.pause()
                   setIsPlaying(false)
                   setCurrentMusicUrl(null)
                 }
+                setFormData(prev => ({ ...prev, music: music.id }))
               }}
               className={`p-3 rounded-xl border-2 transition-all duration-200 text-sm ${
                 formData.music === music.id
@@ -374,7 +374,7 @@ export default function GreetingForm({ onSuccess }) {
         )}
         
         {/* Audio element for preview */}
-        <audio ref={audioRef} preload="auto" />
+        <audio ref={audioRef} preload="auto" playsInline />
         
         {/* Music controls */}
         {currentMusicUrl && (

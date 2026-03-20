@@ -78,14 +78,19 @@ export default function TemplateElegant({ data, isPreview = false }) {
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-gray-800">
               {data.sender_name}
             </h2>
-            <div className="flex items-center justify-center gap-4 my-4">
-              <div className="w-12 h-px bg-gradient-to-r from-transparent to-amber-400" />
-              <span className="text-amber-500">untuk</span>
-              <div className="w-12 h-px bg-gradient-to-l from-transparent to-amber-400" />
-            </div>
-            <h3 className="font-display text-4xl md:text-5xl font-bold text-gray-900">
-              {data.receiver_name}
-            </h3>
+            {data.receiver_name && (
+              <>
+                <div className="flex items-center justify-center gap-4 my-4">
+                  <div className="w-12 h-px bg-gradient-to-r from-transparent to-amber-400" />
+                  <span className="text-amber-500">untuk</span>
+                  <div className="w-12 h-px bg-gradient-to-l from-transparent to-amber-400" />
+                </div>
+
+                <h3 className="font-display text-4xl md:text-5xl font-bold text-gray-900">
+                  {data.receiver_name}
+                </h3>
+              </>
+            )}
           </div>
 
           {/* Message */}

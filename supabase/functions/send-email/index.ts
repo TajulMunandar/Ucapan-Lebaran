@@ -11,18 +11,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, sender_name, receiver_name, greeting_url } = await req.json();
+    const { email, sender_name, greeting_url } = await req.json();
 
     // Validate required fields
-    if (!email || !sender_name || !receiver_name || !greeting_url) {
+    if (!email || !sender_name || !greeting_url) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Using Resend for sending emails (recommended for Supabase)
-    // Or you can use SMTP directly
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     
     if (RESEND_API_KEY) {
@@ -35,7 +33,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: 'GreetEase <noreply@greetease.id>',
           to: email,
-          subject: `Ucapan Lebaran dari ${sender_name} untuk ${receiver_name}`,
+          subject: `Ucapan Lebaran dari ${sender_name}`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -58,7 +56,7 @@ Deno.serve(async (req) => {
                 </div>
                 <div class="content">
                   <p>Assalamu'alaikum Warahmatullahi Wabarakatuh,</p>
-                  <p>Anda menerima ucapan Lebaran dari <strong>${sender_name}</strong> untuk <strong>${receiver_name}</strong>.</p>
+                  <p>Anda menerima ucapan Lebaran dari <strong>${sender_name}</strong>.</p>
                   <p>Klik tombol di bawah untuk melihat ucapan:</p>
                   <p style="text-align: center;">
                     <a href="${greeting_url}" class="button">Lihat Ucapan</a>
@@ -88,7 +86,7 @@ Deno.serve(async (req) => {
       );
     } else {
       // Fallback: Log email data if Resend is not configured
-      console.log('Email would be sent:', { email, sender_name, receiver_name, greeting_url });
+      console.log('Email would be sent:', { email, sender_name, greeting_url });
       return new Response(
         JSON.stringify({ success: true, message: 'Email notification queued (Resend not configured)' }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
