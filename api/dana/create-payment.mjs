@@ -37,11 +37,20 @@ import https from 'https';
  * Convert base64 private key to PEM format
  */
 function base64KeyToPEM(base64Key, keyType = 'PRIVATE') {
-  const chunks = [];
-  for (let i = 0; i < base64Key.length; i += 64) {
-    chunks.push(base64Key.substr(i, 64));
+  try {
+    // First try to decode the base64 to verify it's valid
+    const decoded = Buffer.from(base64Key, 'base64');
+    console.log('Decoded key length:', decoded.length);
+    
+    const chunks = [];
+    for (let i = 0; i < base64Key.length; i += 64) {
+      chunks.push(base64Key.substr(i, 64));
+    }
+    return `-----BEGIN ${keyType} KEY-----\n${chunks.join('\n')}\n-----END ${keyType} KEY-----`;
+  } catch (err) {
+    console.error('Error converting base64 key to PEM:', err.message);
+    throw new Error('Invalid private key format');
   }
-  return `-----BEGIN ${keyType} KEY-----\n${chunks.join('\n')}\n-----END ${keyType} KEY-----`;
 }
 
 /**
@@ -145,6 +154,21 @@ function makeHttpsRequest(url, options, body) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        console.log('Response status:', res.statusCode);
+        console.log('Response headers:', JSON.stringify(res.headers));
+        console.log('Response body length:', data.length);
+        console.log('Response body (first 500):', data.substring(0, 500));
+        
+        // Check for redirect
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          console.log('Redirect to:', res.headers.location);
+        }
+        
+        // Check for error status
+        if (res.statusCode >= 400) {
+          console.error('HTTP Error:', res.statusCode, data.substring(0, 200));
+        }
+        
         resolve({ status: res.statusCode, headers: res.headers, body: data });
       });
     });
@@ -186,9 +210,12 @@ async function getDanaAccessToken() {
 
   const stringToSign = `${DANA_CLIENT_ID}|${timestamp}`
 
+  console.log('String to sign for token:', stringToSign);
+
   const privateKeyPEM = base64KeyToPEM(DANA_PRIVATE_KEY, "PRIVATE")
 
   const signature = signContent(stringToSign, privateKeyPEM)
+  console.log('Generated signature:', signature.substring(0, 50) + '...');
 
   const response = await makeHttpsRequest(
     `${DANA_API_BASE_URL}${path}`,
@@ -205,12 +232,32 @@ async function getDanaAccessToken() {
     body
   )
 
-  const data = JSON.parse(response.body)
+  // Handle empty response
+  if (!response.body || response.body.trim() === '') {
+    console.error('Empty response from DANA API');
+    console.error('Status:', response.status);
+    throw new Error(`DANA API returned empty response. Status: ${response.status}`);
+  }
 
-  console.log("OAuth Response:", data)
+  // Check if response is HTML (error page)
+  const responseBodyTrimmed = response.body.trim();
+  if (responseBodyTrimmed.startsWith('<!DOCTYPE') || responseBodyTrimmed.startsWith('<html') || responseBodyTrimmed.startsWith('<!DOCTYPE')) {
+    console.error('Received HTML error page instead of JSON:', responseBodyTrimmed.substring(0, 300));
+    throw new Error(`DANA API returned HTML error page. Status: ${response.status}. Body: ${responseBodyTrimmed.substring(0, 200)}`);
+  }
+
+  let data;
+  try {
+    data = JSON.parse(response.body);
+  } catch (parseError) {
+    console.error('Failed to parse JSON response:', response.body.substring(0, 200));
+    throw new Error(`Invalid JSON response from DANA API: ${response.body.substring(0, 200)}`);
+  }
+
+  console.log("OAuth Response:", JSON.stringify(data).substring(0, 200));
 
   if (data.resultCode !== "2000000") {
-    throw new Error(data.resultMsg)
+    throw new Error(data.resultMsg || `DANA API error: ${data.resultCode}`)
   }
 
   return data.accessToken
