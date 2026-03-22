@@ -59,14 +59,16 @@ async function getDanaClient() {
   // Set environment variables that Dana library requires
   process.env.PRIVATE_KEY = DANA_PRIVATE_KEY;
   process.env.ORIGIN = ORIGIN;
-  process.env.X_PARTNER_ID = DANA_MERCHANT_ID;
-  process.env.X_CLIENT_KEY = DANA_CLIENT_ID;
+  process.env.X_PARTNER_ID = DANA_MERCHANT_ID;  // Merchant ID
+  process.env.X_CLIENT_KEY = DANA_CLIENT_ID;      // Client ID
+  process.env.CLIENT_SECRET = DANA_CLIENT_SECRET;  // Client Secret
   process.env.ENV = ENV;
   
   console.log('DANA Environment:');
   console.log('- PRIVATE_KEY set:', !!process.env.PRIVATE_KEY);
   console.log('- ORIGIN:', process.env.ORIGIN);
   console.log('- X_PARTNER_ID:', process.env.X_PARTNER_ID);
+  console.log('- CLIENT_SECRET set:', !!process.env.CLIENT_SECRET);
   console.log('- ENV:', process.env.ENV);
   
   // Use the named export 'Dana' from dana-node
