@@ -53,16 +53,19 @@ function validateEnv() {
 
 /**
  * Initialize DANA client
+ * The Dana library reads from environment variables, so we need to set them
  */
 async function getDanaClient() {
-  const { DANA } = await import('dana-node');
+  // Set environment variables that Dana library requires
+  process.env.PRIVATE_KEY = DANA_PRIVATE_KEY;
+  process.env.ORIGIN = ORIGIN;
+  process.env.X_PARTNER_ID = DANA_CLIENT_ID;
+  process.env.ENV = ENV;
   
-  const dana = new DANA({
-    privateKey: DANA_PRIVATE_KEY,
-    origin: ORIGIN,
-    xPartnerId: DANA_CLIENT_ID,
-    env: ENV
-  });
+  // Use the named export 'Dana' from dana-node
+  const { Dana } = await import('dana-node');
+  
+  const dana = new Dana();
   
   return dana;
 }
@@ -127,7 +130,7 @@ export default async function handler(req, res) {
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
 
-    // Create DANA payment request using library (Host-to-Host API)
+    // Create DANA payment request using library
     const paymentRequest = {
       orderNo: orderId,
       totalAmount: PRICE_IDR.toString(),
@@ -140,8 +143,8 @@ export default async function handler(req, res) {
 
     console.log('Payment request:', JSON.stringify(paymentRequest));
 
-    // Create payment using DANA library (Host-to-Host API)
-    const paymentResponse = await dana.payment.gateway.hostToHost(paymentRequest);
+    // Create payment using DANA library
+    const paymentResponse = await dana.paymentGatewayApi.createOrder(paymentRequest);
     
     console.log('Payment Response:', JSON.stringify(paymentResponse).substring(0, 500));
 
