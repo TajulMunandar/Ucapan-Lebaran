@@ -158,14 +158,16 @@ export default async function handler(req, res) {
       validUpTo: validUpTo,
       payOptionDetails: [
         {
-          payMethod: 'BALANCE',
-          payOption: 'QRIS', // Use QRIS for sandbox
+          payMethod: 'VIRTUAL_ACCOUNT',
+          payOption: 'VIRTUAL_ACCOUNT_BRI', // Use VA for sandbox
           transAmount: {
             value: (PRICE_IDR).toFixed(2),
             currency: 'IDR'
           },
           additionalInfo: {
-            phoneNumber: '+62812345678' // Required for sandbox
+            phoneNumber: '+62812345678',
+            // Additional VA-specific fields
+            bankCode: 'BRI'
           }
         }
       ],
