@@ -57,11 +57,13 @@ function validateEnv() {
  */
 async function getDanaClient() {
   // Set environment variables that Dana library requires
+  // Based on DANA docs, X_PARTNER_ID should be Client ID
   process.env.PRIVATE_KEY = DANA_PRIVATE_KEY;
   process.env.ORIGIN = ORIGIN;
-  process.env.X_PARTNER_ID = DANA_MERCHANT_ID;  // Merchant ID
-  process.env.X_CLIENT_KEY = DANA_CLIENT_ID;      // Client ID
+  process.env.X_PARTNER_ID = DANA_CLIENT_ID;      // Try using Client ID
+  process.env.X_CLIENT_KEY = DANA_CLIENT_ID;      // Client ID  
   process.env.CLIENT_SECRET = DANA_CLIENT_SECRET;  // Client Secret
+  process.env.MERCHANT_ID = DANA_MERCHANT_ID;      // Merchant ID
   process.env.ENV = ENV;
   
   console.log('DANA Environment:');
