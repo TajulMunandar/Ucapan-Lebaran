@@ -20,8 +20,8 @@ console.log('Environment check:');
 console.log('- DANA_API_BASE_URL:', DANA_API_BASE_URL ? `SET (${DANA_API_BASE_URL})` : 'MISSING');
 console.log('- DANA_MERCHANT_ID:', DANA_MERCHANT_ID ? `SET (${DANA_MERCHANT_ID})` : 'MISSING');
 console.log('- DANA_CLIENT_ID:', DANA_CLIENT_ID ? `SET (${DANA_CLIENT_ID})` : 'MISSING');
-console.log('- DANA_CLIENT_SECRET:', DANA_CLIENT_SECRET_VAL ? `SET (${DANA_CLIENT_SECRET_VAL.substring(0,10)}...)` : 'MISSING');
-console.log('- DANA_PRIVATE_KEY:', DANA_PRIVATE_KEY ? `SET (${DANA_PRIVATE_KEY.substring(0,20)}...)` : 'MISSING');
+console.log('- DANA_CLIENT_SECRET:', DANA_CLIENT_SECRET_VAL ? `SET (${DANA_CLIENT_SECRET_VAL.substring(0, 10)}...)` : 'MISSING');
+console.log('- DANA_PRIVATE_KEY:', DANA_PRIVATE_KEY ? `SET (${DANA_PRIVATE_KEY.substring(0, 20)}...)` : 'MISSING');
 console.log('- SUPABASE_URL:', SUPABASE_URL_VAL ? `SET (${SUPABASE_URL_VAL})` : 'MISSING');
 console.log('- SUPABASE_SERVICE_KEY:', SUPABASE_SERVICE_KEY_VAL ? 'SET' : 'MISSING');
 
@@ -60,18 +60,18 @@ function generateDanaSignature(method, path, body, timestamp) {
   if (!DANA_PRIVATE_KEY) {
     throw new Error('DANA_PRIVATE_KEY environment variable is not set');
   }
-  
+
   // Hash the body
   const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
-  
+
   // Create string to sign: METHOD:path:bodyHash:timestamp
   const stringToSign = `${method}:${path}:${bodyHash}:${timestamp}`;
   console.log('String to sign:', stringToSign);
-  
+
   // Sign with RSA private key
   const privateKeyPEM = base64KeyToPEM(DANA_PRIVATE_KEY, 'PRIVATE');
   const signature = signContent(stringToSign, privateKeyPEM);
-  
+
   return signature;
 }
 
@@ -85,7 +85,7 @@ function validateEnv() {
   if (!DANA_CLIENT_SECRET_VAL) missing.push('DANA_CLIENT_SECRET');
   if (!SUPABASE_URL_VAL) missing.push('SUPABASE_URL');
   if (!SUPABASE_SERVICE_KEY_VAL) missing.push('SUPABASE_SERVICE_KEY');
-  
+
   if (missing.length > 0) {
     return { valid: false, missing };
   }
@@ -99,7 +99,7 @@ function generateSignature(payload, timestamp) {
   const url = `${DANA_API_BASE_URL}/v2.0/oauth/authorize`;
   const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
   console.log('Signature payload:', signaturePayload.substring(0, 100) + '...');
-  
+
   const signature = crypto
     .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
     .update(signaturePayload)
@@ -127,7 +127,7 @@ function makeHttpsRequest(url, options, body) {
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
     const isHttps = urlObj.protocol === 'https:';
-    
+
     const requestOptions = {
       hostname: urlObj.hostname,
       port: urlObj.port || (isHttps ? 443 : 80),
@@ -160,7 +160,7 @@ function makeHttpsRequest(url, options, body) {
     });
 
     req.setTimeout(30000);
-    
+
     if (body) {
       req.write(body);
     }
@@ -172,93 +172,44 @@ function makeHttpsRequest(url, options, body) {
  * Get access token from DANA
  */
 async function getDanaAccessToken() {
-  // Use ISO 8601 format with timezone (WIB = +07:00)
-  const now = new Date();
-  const timestamp = now.toISOString().replace('Z', '+07:00');
-  
+  const timestamp = new Date().toISOString()
+
   const payload = {
-    clientId: DANA_CLIENT_ID,
-    clientSecret: DANA_CLIENT_SECRET_VAL,
-    grantType: 'client_credentials',
-    merchantId: DANA_MERCHANT_ID,
-  };
+    grantType: "client_credentials"
+  }
 
-  const path = '/v1.0/access-token/b2b';
-  const url = `${DANA_API_BASE_URL}${path}`;
-  const body = JSON.stringify(payload);
+  const path = "/v1.0/access-token/b2b"
+  const body = JSON.stringify(payload)
 
-  // Generate RSA signature
-  const signature = generateDanaSignature('POST', path, body, timestamp);
+  const stringToSign = `${DANA_CLIENT_ID}|${timestamp}`
 
-  console.log('Calling DANA OAuth:', url);
-  console.log('Path:', path);
-  console.log('Timestamp:', timestamp);
-  console.log('Payload:', body);
-  console.log('RSA Signature:', signature);
+  const privateKeyPEM = base64KeyToPEM(DANA_PRIVATE_KEY, "PRIVATE")
 
-  let lastError;
-  let response;
-  let responseText;
-  
-  // Try up to 3 times with delay
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      console.log(`OAuth attempt ${attempt}/3`);
-      
-      response = await makeHttpsRequest(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Client-Id': DANA_CLIENT_ID,
-          'Request-Id': crypto.randomUUID(),
-          'Timestamp': timestamp,
-          'Signature': signature,
-        },
-      }, body);
+  const signature = signContent(stringToSign, privateKeyPEM)
 
-      responseText = response.body;
-      console.log('OAuth Response Status:', response.status);
-      console.log('OAuth Response Text:', responseText.substring(0, 500));
-      
-      if (response.status >= 200 && response.status < 300 && responseText) {
-        break; // Success
+  const response = await makeHttpsRequest(
+    `${DANA_API_BASE_URL}${path}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CLIENT-KEY": DANA_CLIENT_ID,
+        "X-TIMESTAMP": timestamp,
+        "X-SIGNATURE": signature
       }
-      
-      // If we got a response (even error), don't retry
-      if (responseText && responseText.trim() !== '') {
-        break;
-      }
-      
-    } catch (err) {
-      console.log(`OAuth attempt ${attempt} failed:`, err.message);
-      console.log('Error code:', err.code);
-      lastError = err;
-      
-      // Wait before retry
-      if (attempt < 3) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
-    }
+    },
+    body
+  )
+
+  const data = JSON.parse(response.body)
+
+  console.log("OAuth Response:", data)
+
+  if (data.resultCode !== "2000000") {
+    throw new Error(data.resultMsg)
   }
 
-  if (!responseText || responseText.trim() === '') {
-    const errorMsg = lastError ? lastError.message : `Empty response from DANA OAuth. Status: ${response?.status}`;
-    console.error('OAuth failed after retries:', errorMsg);
-    throw new Error('DANA OAuth failed: ' + errorMsg);
-  }
-
-  let data;
-  try {
-    data = JSON.parse(responseText);
-  } catch (parseError) {
-    throw new Error(`Failed to parse DANA OAuth response: ${responseText.substring(0, 200)}`);
-  }
-  
-  if (data.resultCode !== '2000000') {
-    throw new Error(`DANA auth failed: ${data.resultMsg || 'Unknown error'} (code: ${data.resultCode})`);
-  }
-
-  return data.accessToken;
+  return data.accessToken
 }
 
 export default async function handler(req, res) {
@@ -266,7 +217,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -279,12 +230,12 @@ export default async function handler(req, res) {
     // Validate environment variables first
     const envCheck = validateEnv();
     if (!envCheck.valid) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Configuration error',
         message: `Missing environment variables: ${envCheck.missing.join(', ')}`
       });
     }
-    
+
     const { greetingId, slug } = req.body;
 
     if (!greetingId || !slug) {
@@ -320,7 +271,7 @@ export default async function handler(req, res) {
 
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
-    const timestamp = Date.now().toString();
+    const timestamp = new Date().toISOString();
 
     // Create DANA payment request
     const paymentRequest = {
@@ -361,7 +312,7 @@ export default async function handler(req, res) {
     const paymentResponseText = httpPaymentResponse.body;
     console.log('Payment Response Status:', httpPaymentResponse.status);
     console.log('Payment Response Text:', paymentResponseText.substring(0, 300));
-    
+
     let paymentResponseData;
     try {
       paymentResponseData = JSON.parse(paymentResponseText);
@@ -371,9 +322,9 @@ export default async function handler(req, res) {
 
     if (paymentResponseData.resultCode !== '2000000') {
       console.error('DANA payment creation failed:', paymentResponseData.resultMsg);
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Failed to create payment',
-        details: paymentResponseData.resultMsg 
+        details: paymentResponseData.resultMsg
       });
     }
 
@@ -395,7 +346,7 @@ export default async function handler(req, res) {
 
     // Return payment URL to client
     const paymentUrl = paymentResponseData.paymentUrl || paymentResponseData.data?.paymentUrl;
-    
+
     if (!paymentUrl) {
       console.error('No payment URL in response:', paymentResponseData);
       return res.status(500).json({ error: 'No payment URL returned from DANA' });
@@ -414,7 +365,7 @@ export default async function handler(req, res) {
     console.error('=== ERROR CREATING PAYMENT ===');
     console.error('Error:', error.message);
     console.error('Stack:', error.stack);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
       message: error.message,
     });
