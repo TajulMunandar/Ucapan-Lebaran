@@ -11,7 +11,8 @@ import {
   ExternalLink,
   Clock,
   Image as ImageIcon,
-  X
+  X,
+  Wallet
 } from 'lucide-react'
 import { supabase, PRICE_IDR } from '../lib/supabase'
 import DANAImage from '../assets/dana.jpeg'
@@ -26,6 +27,7 @@ export default function PaymentPage() {
   const [error, setError] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [danaLoading, setDanaLoading] = useState(false)
   const [paymentProof, setPaymentProof] = useState(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState(null)
   const [copied, setCopied] = useState(false)
@@ -200,6 +202,48 @@ export default function PaymentPage() {
     }
   }
 
+  /**
+   * Handle DANA payment button click
+   * Creates a DANA order and redirects to payment page
+   */
+  const handleDanaPayment = async () => {
+    if (!greeting) return
+
+    setDanaLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/dana/create-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          greetingId: greeting.id,
+          slug: slug,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to create payment')
+      }
+
+      if (data.paymentUrl) {
+        // Redirect to DANA payment page
+        window.location.href = data.paymentUrl
+      } else {
+        throw new Error('No payment URL returned')
+      }
+
+    } catch (err) {
+      console.error('DANA payment error:', err)
+      setError(err.message || 'Terjadi kesalahan saat memproses pembayaran DANA')
+      setDanaLoading(false)
+    }
+  }
+
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl)
     setCopied(true)
@@ -273,10 +317,10 @@ export default function PaymentPage() {
           {/* Header */}
           <div className="bg-gradient-to-r from-primary-500 to-amber-500 p-6 text-center">
             <h1 className="text-2xl font-bold text-white mb-1">
-              Pembayaran QRIS
+              Pembayaran
             </h1>
             <p className="text-white/80 text-sm">
-              Scan QR untuk membayar
+              Pilih metode pembayaran
             </p>
           </div>
 
@@ -301,7 +345,7 @@ export default function PaymentPage() {
                 className="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 p-4 rounded-xl flex items-center gap-2"
               >
                 <Clock className="w-5 h-5 flex-shrink-0" />
-                <span>Bukti pembayaran sudah diupload. Mohon tunggu verifikasi dari admin.</span>
+                <span>Menunggu pembayaran...</span>
               </motion.div>
             )}
 
@@ -332,70 +376,101 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            {/* QR Code Section - Only show if unpaid */}
+            {/* DANA Payment Section - Only show if unpaid */}
             {isUnpaid && (
-              <div className="text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Scan QR Code berikut dengan aplikasi DANA, GoPay, atau QRIS lainnya
-                </p>
-                
-                <div className="inline-block p-4 bg-white rounded-2xl shadow-lg mb-4">
-                  <img 
-                    src={DANAImage} 
-                    alt="QRIS DANA"
-                    className="w-48 h-48 object-contain"
-                  />
+              <div className="space-y-4">
+                {/* DANA Button */}
+                <button
+                  onClick={handleDanaPayment}
+                  disabled={danaLoading}
+                  className="w-full py-4 px-6 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-2xl font-semibold flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-xl"
+                >
+                  {danaLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="w-6 h-6" />
+                      <span>Bayar dengan DANA</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600"></div>
+                  <span className="text-sm text-gray-400">atau</span>
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600"></div>
                 </div>
-                
-                <p className="text-xs text-gray-400 mb-4">
-                  Atau klik tombol di bawah setelah melakukan pembayaran
-                </p>
+
+                {/* QR Code Section */}
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Scan QR Code berikut dengan aplikasi DANA, GoPay, atau QRIS lainnya
+                  </p>
+                  
+                  <div className="inline-block p-4 bg-white rounded-2xl shadow-lg mb-4">
+                    <img 
+                      src={DANAImage} 
+                      alt="QRIS DANA"
+                      className="w-48 h-48 object-contain"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-400 mb-4">
+                    Atau klik tombol di bawah setelah melakukan pembayaran
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* Payment Proof Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Upload className="w-4 h-4 inline mr-1" />
-                Bukti Pembayaran *
-              </label>
-              
-              {paymentProofPreview ? (
-                <div className="relative inline-block">
-                  <img
-                    src={paymentProofPreview}
-                    alt="Bukti Pembayaran"
-                    className="w-full max-h-48 object-contain rounded-2xl border-2 border-primary-200 dark:border-primary-800"
-                  />
+            {/* Payment Proof Upload - Only show if unpaid */}
+            {isUnpaid && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <Upload className="w-4 h-4 inline mr-1" />
+                  Bukti Pembayaran (Manual)
+                </label>
+                
+                {paymentProofPreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={paymentProofPreview}
+                      alt="Bukti Pembayaran"
+                      className="w-full max-h-48 object-contain rounded-2xl border-2 border-primary-200 dark:border-primary-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={removePhoto}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-primary-500 hover:text-primary-500 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="text-sm">Klik untuk upload bukti transfer</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-primary-500 hover:text-primary-500 transition-colors"
-                >
-                  <ImageIcon className="w-8 h-8" />
-                  <span className="text-sm">Klik untuk upload bukti transfer</span>
-                </button>
-              )}
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoSelect}
-                className="hidden"
-              />
-            </div>
+                )}
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+              </div>
+            )}
 
-            {/* Confirm Payment Button */}
+            {/* Confirm Payment Button (Manual) */}
             {isUnpaid && (
               <button
                 onClick={handleConfirmPayment}
@@ -410,7 +485,7 @@ export default function PaymentPage() {
                 ) : (
                   <>
                     <CheckCircle className="w-5 h-5" />
-                    <span>Saya sudah bayar</span>
+                    <span>Saya sudah bayar (Manual)</span>
                   </>
                 )}
               </button>
@@ -423,10 +498,12 @@ export default function PaymentPage() {
                   <Clock className="w-8 h-8 text-amber-500" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-                  Menunggu Verifikasi
+                  Menunggu Pembayaran
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  Admin akan memverifikasi pembayaran Anda dalam waktu singkat.
+                  {greeting?.payment_method === 'dana' 
+                    ? 'Silakan selesaikan pembayaran di aplikasi DANA.'
+                    : 'Admin akan memverifikasi pembayaran Anda dalam waktu singkat.'}
                 </p>
                 <p className="text-sm text-gray-500">
                   Halaman ini akan otomatis redirect setelah pembayaran diverifikasi.
@@ -455,21 +532,36 @@ export default function PaymentPage() {
               </div>
             )}
 
-            {/* Instructions */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
-              <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
-                Cara Pembayaran:
-              </h4>
-              <ol className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
-                <li>Buka aplikasi DANA, GoPay, atau QRIS</li>
-                <li>Pilih fitur "Scan QR"</li>
-                <li>Scan QR Code di atas</li>
-                <li>Masukkan nominal {formatPrice(PRICE_IDR)}</li>
-                <li>Selesaikan pembayaran</li>
-                <li>Upload screenshot bukti transfer di atas</li>
-                <li>Klik "Saya sudah bayar"</li>
-              </ol>
-            </div>
+            {/* Instructions - Only show if unpaid */}
+            {isUnpaid && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
+                <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
+                  Cara Pembayaran:
+                </h4>
+                <h5 className="font-medium text-blue-700 dark:text-blue-400 mb-1 text-sm">
+                  Via DANA (Otomatis):
+                </h5>
+                <ol className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside mb-3">
+                  <li>Klik tombol "Bayar dengan DANA" di atas</li>
+                  <li>Anda akan diarahkan ke aplikasi DANA</li>
+                  <li>Selesaikan pembayaran</li>
+                  <li>Anda akan otomatis diarahkan ke halaman success</li>
+                </ol>
+                
+                <h5 className="font-medium text-blue-700 dark:text-blue-400 mb-1 text-sm">
+                  Via QRIS (Manual):
+                </h5>
+                <ol className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
+                  <li>Buka aplikasi DANA, GoPay, atau QRIS</li>
+                  <li>Pilih fitur "Scan QR"</li>
+                  <li>Scan QR Code di atas</li>
+                  <li>Masukkan nominal {formatPrice(PRICE_IDR)}</li>
+                  <li>Selesaikan pembayaran</li>
+                  <li>Upload screenshot bukti transfer di atas</li>
+                  <li>Klik "Saya sudah bayar"</li>
+                </ol>
+              </div>
+            )}
 
             {/* Back to Home */}
             <a
