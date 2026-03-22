@@ -173,7 +173,9 @@ function makeHttpsRequest(url, options, body) {
  * Get access token from DANA
  */
 async function getDanaAccessToken() {
-  const timestamp = new Date().toISOString()
+  const timestamp = new Date()
+  .toISOString()
+  .replace("Z", "+07:00")
 
   const payload = {
     grantType: "client_credentials"
@@ -273,7 +275,9 @@ export default async function handler(req, res) {
 
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date()
+  .toISOString()
+  .replace("Z", "+07:00")
 
     // Create DANA payment request
     const paymentRequest = {
