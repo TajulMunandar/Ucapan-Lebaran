@@ -64,6 +64,26 @@ function signContent(content, privateKeyPEM) {
 }
 
 /**
+ * Generate SHA-256 hash of the body (hex lowercase)
+ */
+function generateBodyHash(body) {
+  return crypto.createHash('sha256').update(body).digest('hex');
+}
+
+/**
+ * Generate DANA Transactional Token signature
+ * Format: <HTTP METHOD> + ":" + <RELATIVE PATH URL> + ":" + LowerCase(HexEncode(SHA-256(Minify(<HTTP BODY>)))) + ":" + <X-TIMESTAMP>
+ */
+function generateTransactionalSignature(method, path, body, timestamp, privateKeyPEM) {
+  // Minify JSON (remove whitespace)
+  const minifiedBody = JSON.stringify(JSON.parse(body));
+  const bodyHash = generateBodyHash(minifiedBody);
+  const stringToSign = `${method}:${path}:${bodyHash}:${timestamp}`;
+  console.log('Transactional string to sign:', stringToSign);
+  return signContent(stringToSign, privateKeyPEM);
+}
+
+/**
  * Generate DANA RSA signature (for v1.0 API)
  */
 function generateDanaSignature(method, path, body, timestamp) {
@@ -93,6 +113,7 @@ function validateEnv() {
   if (!DANA_MERCHANT_ID) missing.push('DANA_MERCHANT_ID');
   if (!DANA_CLIENT_ID) missing.push('DANA_CLIENT_ID');
   if (!DANA_CLIENT_SECRET_VAL) missing.push('DANA_CLIENT_SECRET');
+  if (!DANA_PRIVATE_KEY) missing.push('DANA_PRIVATE_KEY');
   if (!SUPABASE_URL_VAL) missing.push('SUPABASE_URL');
   if (!SUPABASE_SERVICE_KEY_VAL) missing.push('SUPABASE_SERVICE_KEY');
 
@@ -103,31 +124,22 @@ function validateEnv() {
 }
 
 /**
- * Generate DANA signature
+ * Generate DANA signature using Transactional Token method
+ * Format: <HTTP METHOD> + ":" + <RELATIVE PATH URL> + ":" + LowerCase(HexEncode(SHA-256(Minify(<HTTP BODY>)))) + ":" + <X-TIMESTAMP>
  */
 function generateSignature(payload, timestamp) {
-  const url = `${DANA_API_BASE_URL}/v2.0/oauth/authorize`;
-  const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
-  console.log('Signature payload:', signaturePayload.substring(0, 100) + '...');
-
-  const signature = crypto
-    .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
-    .update(signaturePayload)
-    .digest('hex');
-  return signature;
+  const path = "/v2.0/oauth/authorize";
+  const body = JSON.stringify(payload);
+  return generateTransactionalSignature("POST", path, body, timestamp, base64KeyToPEM(DANA_PRIVATE_KEY, "PRIVATE"));
 }
 
 /**
- * Generate payment signature
+ * Generate payment signature using Transactional Token method
  */
 function generatePaymentSignature(payload, timestamp) {
-  const url = `${DANA_API_BASE_URL}/v2.0/payment/gateway/create`;
-  const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
-  const signature = crypto
-    .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
-    .update(signaturePayload)
-    .digest('hex');
-  return signature;
+  const path = "/v2.0/payment/gateway/create";
+  const body = JSON.stringify(payload);
+  return generateTransactionalSignature("POST", path, body, timestamp, base64KeyToPEM(DANA_PRIVATE_KEY, "PRIVATE"));
 }
 
 /**
@@ -195,26 +207,28 @@ function makeHttpsRequest(url, options, body) {
 
 /**
  * Get access token from DANA
+ * Uses Transactional Token method with body hash in signature
  */
 async function getDanaAccessToken() {
   const timestamp = new Date()
   .toISOString()
   .replace("Z", "+07:00")
 
+  // Using v2.0 OAuth endpoint
+  const path = "/v2.0/oauth/authorize"
+  
   const payload = {
-    grantType: "client_credentials"
+    grantType: "client_credentials",
+    clientId: DANA_CLIENT_ID,
+    partnerId: DANA_MERCHANT_ID
   }
 
-  const path = "/v1.0/access-token/b2b"
   const body = JSON.stringify(payload)
-
-  const stringToSign = `${DANA_CLIENT_ID}|${timestamp}`
-
-  console.log('String to sign for token:', stringToSign);
 
   const privateKeyPEM = base64KeyToPEM(DANA_PRIVATE_KEY, "PRIVATE")
 
-  const signature = signContent(stringToSign, privateKeyPEM)
+  // Use Transactional Token method signature
+  const signature = generateTransactionalSignature("POST", path, body, timestamp, privateKeyPEM)
   console.log('Generated signature:', signature.substring(0, 50) + '...');
 
   const response = await makeHttpsRequest(
@@ -226,7 +240,8 @@ async function getDanaAccessToken() {
         "X-CLIENT-KEY": DANA_CLIENT_ID,
         "X-TIMESTAMP": timestamp,
         "X-SIGNATURE": signature,
-        "X-PARTNER-ID": DANA_MERCHANT_ID
+        "X-PARTNER-ID": DANA_MERCHANT_ID,
+        "Authorization": `Bearer ${DANA_CLIENT_ID}`
       }
     },
     body
@@ -347,6 +362,7 @@ export default async function handler(req, res) {
 
     // Generate signature
     const signature = generatePaymentSignature(paymentRequest, timestamp);
+    console.log('Payment signature:', signature.substring(0, 50) + '...');
 
     // Call DANA API
     const paymentApiUrl = `${DANA_API_BASE_URL}/v2.0/payment/gateway/create`;
@@ -354,10 +370,10 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Client-Id': DANA_CLIENT_ID,
-        'Request-Id': crypto.randomUUID(),
-        'Timestamp': timestamp,
-        'Signature': signature,
+        'X-CLIENT-KEY': DANA_CLIENT_ID,
+        'X-TIMESTAMP': timestamp,
+        'X-SIGNATURE': signature,
+        'X-PARTNER-ID': DANA_MERCHANT_ID,
         'Authorization': `Bearer ${accessToken}`,
       },
     }, JSON.stringify(paymentRequest));
