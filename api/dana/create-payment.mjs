@@ -127,37 +127,30 @@ export default async function handler(req, res) {
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
 
-    // Create DANA payment request using library
+    // Create DANA payment request using library (Host-to-Host API)
     const paymentRequest = {
-      order: {
-        orderId: orderId,
-        orderAmount: PRICE_IDR.toString(),
-        orderDescription: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
-        merchantId: DANA_MERCHANT_ID,
-      },
-      payment: {
-        paymentMethod: 'DANA',
-        paymentType: 'single',
-        redirectUrl: `${SITE_URL}/success?order_id=${orderId}&greeting_id=${greetingId}`,
-      },
-      merchantExtendInfo: {
-        merchantName: 'Ucapan Lebaran',
-      },
-      merchantOrderId: greetingId,
+      orderNo: orderId,
+      totalAmount: PRICE_IDR.toString(),
+      subject: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
+      body: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
+      notifyUrl: `${SITE_URL}/api/dana/finish`,
+      callbackUrl: `${SITE_URL}/success?order_id=${orderId}&greeting_id=${greetingId}`,
+      merchantId: DANA_MERCHANT_ID,
     };
 
     console.log('Payment request:', JSON.stringify(paymentRequest));
 
-    // Create payment using DANA library
-    const paymentResponse = await dana.payment.gateway.create(paymentRequest);
+    // Create payment using DANA library (Host-to-Host API)
+    const paymentResponse = await dana.payment.gateway.hostToHost(paymentRequest);
     
-    console.log('Payment Response:', JSON.stringify(paymentResponse).substring(0, 300));
+    console.log('Payment Response:', JSON.stringify(paymentResponse).substring(0, 500));
 
-    if (paymentResponse.resultCode !== '2000000') {
-      console.error('DANA payment creation failed:', paymentResponse.resultMsg);
+    // Check for success response code (2005400)
+    if (paymentResponse.responseCode !== '2005400') {
+      console.error('DANA payment creation failed:', paymentResponse.responseMessage);
       return res.status(400).json({
         error: 'Failed to create payment',
-        details: paymentResponse.resultMsg
+        details: paymentResponse.responseMessage || paymentResponse.resultMsg
       });
     }
 
@@ -177,8 +170,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to update payment status' });
     }
 
-    // Return payment URL to client
-    const paymentUrl = paymentResponse.paymentUrl || paymentResponse.data?.paymentUrl;
+    // Return payment URL to client (Host-to-Host returns webRedirectUrl)
+    const paymentUrl = paymentResponse.webRedirectUrl || 
+                      paymentResponse.paymentUrl || 
+                      paymentResponse.data?.webRedirectUrl ||
+                      paymentResponse.data?.paymentUrl;
 
     if (!paymentUrl) {
       console.error('No payment URL in response:', paymentResponse);
