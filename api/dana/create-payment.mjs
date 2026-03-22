@@ -21,12 +21,59 @@ console.log('- DANA_API_BASE_URL:', DANA_API_BASE_URL ? `SET (${DANA_API_BASE_UR
 console.log('- DANA_MERCHANT_ID:', DANA_MERCHANT_ID ? `SET (${DANA_MERCHANT_ID})` : 'MISSING');
 console.log('- DANA_CLIENT_ID:', DANA_CLIENT_ID ? `SET (${DANA_CLIENT_ID})` : 'MISSING');
 console.log('- DANA_CLIENT_SECRET:', DANA_CLIENT_SECRET_VAL ? `SET (${DANA_CLIENT_SECRET_VAL.substring(0,10)}...)` : 'MISSING');
+console.log('- DANA_PRIVATE_KEY:', DANA_PRIVATE_KEY ? `SET (${DANA_PRIVATE_KEY.substring(0,20)}...)` : 'MISSING');
 console.log('- SUPABASE_URL:', SUPABASE_URL_VAL ? `SET (${SUPABASE_URL_VAL})` : 'MISSING');
 console.log('- SUPABASE_SERVICE_KEY:', SUPABASE_SERVICE_KEY_VAL ? 'SET' : 'MISSING');
 
 import crypto from 'crypto';
 import http from 'http';
 import https from 'https';
+
+// DANA Private Key for RSA signing (from environment variable)
+const DANA_PRIVATE_KEY = process.env.DANA_PRIVATE_KEY;
+
+/**
+ * Convert base64 private key to PEM format
+ */
+function base64KeyToPEM(base64Key, keyType = 'PRIVATE') {
+  const chunks = [];
+  for (let i = 0; i < base64Key.length; i += 64) {
+    chunks.push(base64Key.substr(i, 64));
+  }
+  return `-----BEGIN ${keyType} KEY-----\n${chunks.join('\n')}\n-----END ${keyType} KEY-----`;
+}
+
+/**
+ * Sign content using RSA-SHA256
+ */
+function signContent(content, privateKeyPEM) {
+  const sign = crypto.createSign('SHA256');
+  sign.write(content, 'utf8');
+  sign.end();
+  return sign.sign(privateKeyPEM, 'base64');
+}
+
+/**
+ * Generate DANA RSA signature (for v1.0 API)
+ */
+function generateDanaSignature(method, path, body, timestamp) {
+  if (!DANA_PRIVATE_KEY) {
+    throw new Error('DANA_PRIVATE_KEY environment variable is not set');
+  }
+  
+  // Hash the body
+  const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
+  
+  // Create string to sign: METHOD:path:bodyHash:timestamp
+  const stringToSign = `${method}:${path}:${bodyHash}:${timestamp}`;
+  console.log('String to sign:', stringToSign);
+  
+  // Sign with RSA private key
+  const privateKeyPEM = base64KeyToPEM(DANA_PRIVATE_KEY, 'PRIVATE');
+  const signature = signContent(stringToSign, privateKeyPEM);
+  
+  return signature;
+}
 
 const PRICE_IDR = 1000;
 
@@ -125,7 +172,9 @@ function makeHttpsRequest(url, options, body) {
  * Get access token from DANA
  */
 async function getDanaAccessToken() {
-  const timestamp = Date.now().toString();
+  // Use ISO 8601 format with timezone (WIB = +07:00)
+  const now = new Date();
+  const timestamp = now.toISOString().replace('Z', '+07:00');
   
   const payload = {
     clientId: DANA_CLIENT_ID,
@@ -134,16 +183,18 @@ async function getDanaAccessToken() {
     merchantId: DANA_MERCHANT_ID,
   };
 
-  const url = `${DANA_API_BASE_URL}/v1.0/access-token/b2b`;
-  const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
-  const signature = crypto
-    .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
-    .update(signaturePayload)
-    .digest('hex');
+  const path = '/v1.0/access-token/b2b';
+  const url = `${DANA_API_BASE_URL}${path}`;
+  const body = JSON.stringify(payload);
+
+  // Generate RSA signature
+  const signature = generateDanaSignature('POST', path, body, timestamp);
 
   console.log('Calling DANA OAuth:', url);
-  console.log('Payload:', JSON.stringify(payload));
-  console.log('Signature:', signature);
+  console.log('Path:', path);
+  console.log('Timestamp:', timestamp);
+  console.log('Payload:', body);
+  console.log('RSA Signature:', signature);
 
   let lastError;
   let response;
@@ -163,7 +214,7 @@ async function getDanaAccessToken() {
           'Timestamp': timestamp,
           'Signature': signature,
         },
-      }, JSON.stringify(payload));
+      }, body);
 
       responseText = response.body;
       console.log('OAuth Response Status:', response.status);
