@@ -152,17 +152,20 @@ export default async function handler(req, res) {
       partnerReferenceNo: orderId,
       merchantId: DANA_MERCHANT_ID,
       amount: {
-        value: PRICE_IDR.toString(),
+        value: (PRICE_IDR).toFixed(2), // Amount in IDR with 2 decimal places (1000.00)
         currency: 'IDR'
       },
       validUpTo: validUpTo,
       payOptionDetails: [
         {
           payMethod: 'BALANCE',
-          payOption: 'NETWORK_PAY_PG_SPAY',
+          payOption: 'QRIS', // Use QRIS for sandbox
           transAmount: {
-            value: PRICE_IDR.toString(),
+            value: (PRICE_IDR).toFixed(2),
             currency: 'IDR'
+          },
+          additionalInfo: {
+            phoneNumber: '+62812345678' // Required for sandbox
           }
         }
       ],
@@ -180,7 +183,8 @@ export default async function handler(req, res) {
       ],
       additionalInfo: {
         merchantName: 'Ucapan Lebaran',
-        orderDescription: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`
+        orderDescription: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
+        phoneNumber: '+62812345678'
       }
     };
 
