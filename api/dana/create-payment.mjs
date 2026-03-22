@@ -25,6 +25,8 @@ console.log('- SUPABASE_URL:', SUPABASE_URL_VAL ? 'SET' : 'MISSING');
 console.log('- SUPABASE_SERVICE_KEY:', SUPABASE_SERVICE_KEY_VAL ? 'SET' : 'MISSING');
 
 import crypto from 'crypto';
+import http from 'http';
+import https from 'https';
 
 const PRICE_IDR = 1000;
 
@@ -72,6 +74,54 @@ function generatePaymentSignature(payload, timestamp) {
 }
 
 /**
+ * Make HTTP request using native Node.js https
+ */
+function makeHttpsRequest(url, options, body) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const isHttps = urlObj.protocol === 'https:';
+    
+    const requestOptions = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || (isHttps ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: options.method || 'GET',
+      headers: options.headers || {},
+      rejectUnauthorized: true,
+    };
+
+    console.log('Making request to:', url);
+    console.log('Request options:', JSON.stringify(requestOptions));
+
+    const req = (isHttps ? https : http).request(requestOptions, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        resolve({ status: res.statusCode, headers: res.headers, body: data });
+      });
+    });
+
+    req.on('error', (err) => {
+      console.error('Request error:', err.message);
+      console.error('Error code:', err.code);
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    req.setTimeout(30000);
+    
+    if (body) {
+      req.write(body);
+    }
+    req.end();
+  });
+}
+
+/**
  * Get access token from DANA
  */
 async function getDanaAccessToken() {
@@ -92,25 +142,58 @@ async function getDanaAccessToken() {
     .digest('hex');
 
   console.log('Calling DANA OAuth:', url);
+  console.log('Payload:', JSON.stringify(payload));
+  console.log('Signature:', signature);
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Client-Id': DANA_CLIENT_ID,
-      'Request-Id': crypto.randomUUID(),
-      'Timestamp': timestamp,
-      'Signature': signature,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  console.log('OAuth Response Status:', response.status);
-  const responseText = await response.text();
-  console.log('OAuth Response Text:', responseText.substring(0, 300));
+  let lastError;
+  let response;
+  let responseText;
   
+  // Try up to 3 times with delay
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`OAuth attempt ${attempt}/3`);
+      
+      response = await makeHttpsRequest(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Client-Id': DANA_CLIENT_ID,
+          'Request-Id': crypto.randomUUID(),
+          'Timestamp': timestamp,
+          'Signature': signature,
+        },
+      }, JSON.stringify(payload));
+
+      responseText = response.body;
+      console.log('OAuth Response Status:', response.status);
+      console.log('OAuth Response Text:', responseText.substring(0, 500));
+      
+      if (response.status >= 200 && response.status < 300 && responseText) {
+        break; // Success
+      }
+      
+      // If we got a response (even error), don't retry
+      if (responseText && responseText.trim() !== '') {
+        break;
+      }
+      
+    } catch (err) {
+      console.log(`OAuth attempt ${attempt} failed:`, err.message);
+      console.log('Error code:', err.code);
+      lastError = err;
+      
+      // Wait before retry
+      if (attempt < 3) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  }
+
   if (!responseText || responseText.trim() === '') {
-    throw new Error('Empty response from DANA OAuth endpoint. Status: ' + response.status);
+    const errorMsg = lastError ? lastError.message : `Empty response from DANA OAuth. Status: ${response?.status}`;
+    console.error('OAuth failed after retries:', errorMsg);
+    throw new Error('DANA OAuth failed: ' + errorMsg);
   }
 
   let data;
@@ -211,7 +294,8 @@ export default async function handler(req, res) {
     const signature = generatePaymentSignature(paymentRequest, timestamp);
 
     // Call DANA API
-    const response = await fetch(`${DANA_API_BASE_URL}/v2.0/payment/gateway/create`, {
+    const paymentApiUrl = `${DANA_API_BASE_URL}/v2.0/payment/gateway/create`;
+    const httpPaymentResponse = await makeHttpsRequest(paymentApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -221,25 +305,24 @@ export default async function handler(req, res) {
         'Signature': signature,
         'Authorization': `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(paymentRequest),
-    });
+    }, JSON.stringify(paymentRequest));
 
-    const paymentResponseText = await response.text();
-    console.log('Payment Response Status:', response.status);
+    const paymentResponseText = httpPaymentResponse.body;
+    console.log('Payment Response Status:', httpPaymentResponse.status);
     console.log('Payment Response Text:', paymentResponseText.substring(0, 300));
     
-    let paymentResponse;
+    let paymentResponseData;
     try {
-      paymentResponse = JSON.parse(paymentResponseText);
+      paymentResponseData = JSON.parse(paymentResponseText);
     } catch (e) {
       throw new Error(`Failed to parse DANA payment response: ${paymentResponseText.substring(0, 200)}`);
     }
 
-    if (paymentResponse.resultCode !== '2000000') {
-      console.error('DANA payment creation failed:', paymentResponse.resultMsg);
+    if (paymentResponseData.resultCode !== '2000000') {
+      console.error('DANA payment creation failed:', paymentResponseData.resultMsg);
       return res.status(400).json({ 
         error: 'Failed to create payment',
-        details: paymentResponse.resultMsg 
+        details: paymentResponseData.resultMsg 
       });
     }
 
@@ -260,10 +343,10 @@ export default async function handler(req, res) {
     }
 
     // Return payment URL to client
-    const paymentUrl = paymentResponse.paymentUrl || paymentResponse.data?.paymentUrl;
+    const paymentUrl = paymentResponseData.paymentUrl || paymentResponseData.data?.paymentUrl;
     
     if (!paymentUrl) {
-      console.error('No payment URL in response:', paymentResponse);
+      console.error('No payment URL in response:', paymentResponseData);
       return res.status(500).json({ error: 'No payment URL returned from DANA' });
     }
 
