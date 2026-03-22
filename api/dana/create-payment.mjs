@@ -17,11 +17,11 @@ const SUPABASE_SERVICE_KEY_VAL = process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.SITE_URL || 'https://ucapan-lebaran-nine.vercel.app';
 
 console.log('Environment check:');
-console.log('- DANA_API_BASE_URL:', DANA_API_BASE_URL ? 'SET' : 'MISSING');
-console.log('- DANA_MERCHANT_ID:', DANA_MERCHANT_ID ? 'SET' : 'MISSING');
-console.log('- DANA_CLIENT_ID:', DANA_CLIENT_ID ? 'SET' : 'MISSING');
-console.log('- DANA_CLIENT_SECRET:', DANA_CLIENT_SECRET_VAL ? 'SET' : 'MISSING');
-console.log('- SUPABASE_URL:', SUPABASE_URL_VAL ? 'SET' : 'MISSING');
+console.log('- DANA_API_BASE_URL:', DANA_API_BASE_URL ? `SET (${DANA_API_BASE_URL})` : 'MISSING');
+console.log('- DANA_MERCHANT_ID:', DANA_MERCHANT_ID ? `SET (${DANA_MERCHANT_ID})` : 'MISSING');
+console.log('- DANA_CLIENT_ID:', DANA_CLIENT_ID ? `SET (${DANA_CLIENT_ID})` : 'MISSING');
+console.log('- DANA_CLIENT_SECRET:', DANA_CLIENT_SECRET_VAL ? `SET (${DANA_CLIENT_SECRET_VAL.substring(0,10)}...)` : 'MISSING');
+console.log('- SUPABASE_URL:', SUPABASE_URL_VAL ? `SET (${SUPABASE_URL_VAL})` : 'MISSING');
 console.log('- SUPABASE_SERVICE_KEY:', SUPABASE_SERVICE_KEY_VAL ? 'SET' : 'MISSING');
 
 import crypto from 'crypto';
