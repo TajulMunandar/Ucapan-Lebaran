@@ -134,7 +134,7 @@ async function getDanaAccessToken() {
     merchantId: DANA_MERCHANT_ID,
   };
 
-  const url = `${DANA_API_BASE_URL}/v2.0/oauth/authorize`;
+  const url = `${DANA_API_BASE_URL}/v1.0/access-token/b2b`;
   const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
   const signature = crypto
     .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
