@@ -60,7 +60,7 @@ async function getDanaClient() {
   process.env.PRIVATE_KEY = DANA_PRIVATE_KEY;
   process.env.ORIGIN = ORIGIN;
   process.env.X_PARTNER_ID = DANA_MERCHANT_ID;
-  process.env.CLIENT_ID = DANA_CLIENT_ID;
+  process.env.X_CLIENT_KEY = DANA_CLIENT_ID;
   process.env.ENV = ENV;
   
   console.log('DANA Environment:');
