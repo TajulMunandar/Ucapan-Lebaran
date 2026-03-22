@@ -196,7 +196,8 @@ async function getDanaAccessToken() {
         "Content-Type": "application/json",
         "X-CLIENT-KEY": DANA_CLIENT_ID,
         "X-TIMESTAMP": timestamp,
-        "X-SIGNATURE": signature
+        "X-SIGNATURE": signature,
+        "X-PARTNER-ID": DANA_MERCHANT_ID
       }
     },
     body
