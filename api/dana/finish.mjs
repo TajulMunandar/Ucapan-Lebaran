@@ -14,7 +14,8 @@ console.log('Finish API environment:', {
   SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'missing',
 });
 
-const crypto = require('crypto');
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const MERCHANT_ID = process.env.DANA_MERCHANT_ID;
 const CLIENT_ID = process.env.DANA_CLIENT_ID;
@@ -26,11 +27,10 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
  * Create Supabase admin client
  */
 function createSupabaseClient() {
-  const { createClient } = require('@supabase/supabase-js');
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -185,4 +185,4 @@ module.exports = async function handler(req, res) {
       message: error.message 
     });
   }
-};
+}

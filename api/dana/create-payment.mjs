@@ -15,7 +15,8 @@ console.log('Environment check:', {
   SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'missing',
 });
 
-const crypto = require('crypto');
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const DANA_API_BASE_URL = process.env.DANA_API_BASE_URL || 'https://api.sandbox.dana.id';
 const MERCHANT_ID = process.env.DANA_MERCHANT_ID;
@@ -57,7 +58,6 @@ function generateSignature(payload, timestamp) {
  * Create Supabase admin client
  */
 function createSupabaseClient() {
-  const { createClient } = require('@supabase/supabase-js');
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
@@ -103,7 +103,7 @@ async function getDanaAccessToken() {
   return data.accessToken;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -242,7 +242,6 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ 
       error: 'Internal server error',
       message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-};
+}

@@ -13,7 +13,8 @@ console.log('Check Status API environment:', {
   SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'missing',
 });
 
-const crypto = require('crypto');
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const DANA_API_BASE_URL = process.env.DANA_API_BASE_URL || 'https://api.sandbox.dana.id';
 const MERCHANT_ID = process.env.DANA_MERCHANT_ID;
@@ -66,11 +67,10 @@ async function getDanaAccessToken() {
  * Create Supabase admin client
  */
 function createSupabaseClient() {
-  const { createClient } = require('@supabase/supabase-js');
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -242,4 +242,4 @@ module.exports = async function handler(req, res) {
       message: error.message 
     });
   }
-};
+}
