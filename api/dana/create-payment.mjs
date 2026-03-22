@@ -137,8 +137,15 @@ export default async function handler(req, res) {
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
     
-    // Calculate validUpTo (30 minutes from now) - must be in ISO format with +07:00
-    const validUpTo = new Date(Date.now() + 30 * 60 * 1000).toISOString().replace('Z', '+07:00');
+    // Calculate validUpTo (30 minutes from now) - must match pattern: YYYY-MM-DDTHH:mm:ss+07:00 (max 25 chars)
+    const now = new Date(Date.now() + 30 * 60 * 1000);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const validUpTo = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
 
     // Create DANA payment request using correct API format
     const paymentRequest = {
