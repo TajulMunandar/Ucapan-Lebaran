@@ -5,35 +5,37 @@
  * Creates a DANA payment order and returns the payment URL
  */
 
-// Debug: Log all env vars
-console.log('=== CREATE PAYMENT API ===');
-console.log('DANA_API_BASE_URL:', process.env.DANA_API_BASE_URL);
-console.log('DANA_MERCHANT_ID:', process.env.DANA_MERCHANT_ID ? 'SET' : 'MISSING');
-console.log('DANA_CLIENT_ID:', process.env.DANA_CLIENT_ID ? 'SET' : 'MISSING');
-console.log('DANA_CLIENT_SECRET:', process.env.DANA_CLIENT_SECRET ? 'SET' : 'MISSING');
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET' : 'MISSING');
-console.log('SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'MISSING');
+console.log('=== CREATE PAYMENT API START ===');
+
+// Get environment variables with explicit naming
+const DANA_API_BASE_URL = process.env.DANA_API_BASE_URL;
+const DANA_MERCHANT_ID = process.env.DANA_MERCHANT_ID;
+const DANA_CLIENT_ID = process.env.DANA_CLIENT_ID;
+const DANA_CLIENT_SECRET_VAL = process.env.DANA_CLIENT_SECRET;
+const SUPABASE_URL_VAL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY_VAL = process.env.SUPABASE_SERVICE_KEY;
+const SITE_URL = process.env.SITE_URL || 'https://ucapan-lebaran-nine.vercel.app';
+
+console.log('Environment check:');
+console.log('- DANA_API_BASE_URL:', DANA_API_BASE_URL ? 'SET' : 'MISSING');
+console.log('- DANA_MERCHANT_ID:', DANA_MERCHANT_ID ? 'SET' : 'MISSING');
+console.log('- DANA_CLIENT_ID:', DANA_CLIENT_ID ? 'SET' : 'MISSING');
+console.log('- DANA_CLIENT_SECRET:', DANA_CLIENT_SECRET_VAL ? 'SET' : 'MISSING');
+console.log('- SUPABASE_URL:', SUPABASE_URL_VAL ? 'SET' : 'MISSING');
+console.log('- SUPABASE_SERVICE_KEY:', SUPABASE_SERVICE_KEY_VAL ? 'SET' : 'MISSING');
 
 import crypto from 'crypto';
 
-const DANA_API_BASE_URL = process.env.DANA_API_BASE_URL || 'https://api.sandbox.dana.id';
-const MERCHANT_ID = process.env.DANA_MERCHANT_ID;
-const CLIENT_ID = process.env.DANA_CLIENT_ID;
-const CLIENT_SECRET = process.env.DANA_CLIENT_SECRET;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const SITE_URL = process.env.SITE_URL || 'https://ucapan-lebaran-nine.vercel.app';
-
-const PRICE_IDR = 1000; // Rp 1,000
+const PRICE_IDR = 1000;
 
 // Validate required environment variables
 function validateEnv() {
   const missing = [];
-  if (!MERCHANT_ID) missing.push('DANA_MERCHANT_ID');
-  if (!CLIENT_ID) missing.push('DANA_CLIENT_ID');
-  if (!CLIENT_SECRET) missing.push('DANA_CLIENT_SECRET');
-  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
-  if (!SUPABASE_SERVICE_KEY) missing.push('SUPABASE_SERVICE_KEY');
+  if (!DANA_MERCHANT_ID) missing.push('DANA_MERCHANT_ID');
+  if (!DANA_CLIENT_ID) missing.push('DANA_CLIENT_ID');
+  if (!DANA_CLIENT_SECRET_VAL) missing.push('DANA_CLIENT_SECRET');
+  if (!SUPABASE_URL_VAL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_SERVICE_KEY_VAL) missing.push('SUPABASE_SERVICE_KEY');
   
   if (missing.length > 0) {
     return { valid: false, missing };
@@ -45,9 +47,12 @@ function validateEnv() {
  * Generate DANA signature
  */
 function generateSignature(payload, timestamp) {
-  const signaturePayload = `POST${DANA_API_BASE_URL}/v2.0/oauth/authorize*${JSON.stringify(payload)}*${timestamp}`;
+  const url = `${DANA_API_BASE_URL}/v2.0/oauth/authorize`;
+  const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
+  console.log('Signature payload:', signaturePayload.substring(0, 100) + '...');
+  
   const signature = crypto
-    .createHmac('sha256', CLIENT_SECRET)
+    .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
     .update(signaturePayload)
     .digest('hex');
   return signature;
@@ -57,9 +62,10 @@ function generateSignature(payload, timestamp) {
  * Generate payment signature
  */
 function generatePaymentSignature(payload, timestamp) {
-  const signaturePayload = `POST${DANA_API_BASE_URL}/v2.0/payment/gateway/create*${JSON.stringify(payload)}*${timestamp}`;
+  const url = `${DANA_API_BASE_URL}/v2.0/payment/gateway/create`;
+  const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
   const signature = crypto
-    .createHmac('sha256', CLIENT_SECRET)
+    .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
     .update(signaturePayload)
     .digest('hex');
   return signature;
@@ -72,29 +78,26 @@ async function getDanaAccessToken() {
   const timestamp = Date.now().toString();
   
   const payload = {
-    clientId: CLIENT_ID,
-    clientSecret: CLIENT_SECRET,
+    clientId: DANA_CLIENT_ID,
+    clientSecret: DANA_CLIENT_SECRET_VAL,
     grantType: 'client_credentials',
-    merchantId: MERCHANT_ID,
+    merchantId: DANA_MERCHANT_ID,
   };
 
-  const signaturePayload = `POST${DANA_API_BASE_URL}/v2.0/oauth/authorize*${JSON.stringify(payload)}*${timestamp}`;
+  const url = `${DANA_API_BASE_URL}/v2.0/oauth/authorize`;
+  const signaturePayload = `POST${url}*${JSON.stringify(payload)}*${timestamp}`;
   const signature = crypto
-    .createHmac('sha256', CLIENT_SECRET)
+    .createHmac('sha256', DANA_CLIENT_SECRET_VAL)
     .update(signaturePayload)
     .digest('hex');
 
-  console.log('DANA OAuth Request:', {
-    url: `${DANA_API_BASE_URL}/v2.0/oauth/authorize`,
-    payload,
-    signature: signature.substring(0, 20) + '...'
-  });
+  console.log('Calling DANA OAuth:', url);
 
-  const response = await fetch(`${DANA_API_BASE_URL}/v2.0/oauth/authorize`, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Id': CLIENT_ID,
+      'Client-Id': DANA_CLIENT_ID,
       'Request-Id': crypto.randomUUID(),
       'Timestamp': timestamp,
       'Signature': signature,
@@ -102,12 +105,12 @@ async function getDanaAccessToken() {
     body: JSON.stringify(payload),
   });
 
-  console.log('DANA OAuth Response Status:', response.status);
+  console.log('OAuth Response Status:', response.status);
   const responseText = await response.text();
-  console.log('DANA OAuth Response Text:', responseText.substring(0, 500));
+  console.log('OAuth Response Text:', responseText.substring(0, 300));
   
   if (!responseText || responseText.trim() === '') {
-    throw new Error('Empty response from DANA OAuth endpoint');
+    throw new Error('Empty response from DANA OAuth endpoint. Status: ' + response.status);
   }
 
   let data;
@@ -116,8 +119,6 @@ async function getDanaAccessToken() {
   } catch (parseError) {
     throw new Error(`Failed to parse DANA OAuth response: ${responseText.substring(0, 200)}`);
   }
-  
-  console.log('DANA OAuth parsed response:', JSON.stringify(data));
   
   if (data.resultCode !== '2000000') {
     throw new Error(`DANA auth failed: ${data.resultMsg || 'Unknown error'} (code: ${data.resultCode})`);
@@ -136,7 +137,6 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
 
     // Get Supabase client
     const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const supabase = createClient(SUPABASE_URL_VAL, SUPABASE_SERVICE_KEY_VAL);
 
     // Fetch greeting to verify it exists
     const { data: greeting, error: fetchError } = await supabase
@@ -194,7 +194,7 @@ export default async function handler(req, res) {
         orderId: orderId,
         orderAmount: PRICE_IDR.toString(),
         orderDescription: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
-        merchantId: MERCHANT_ID,
+        merchantId: DANA_MERCHANT_ID,
       },
       payment: {
         paymentMethod: 'DANA',
@@ -215,7 +215,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Client-Id': CLIENT_ID,
+        'Client-Id': DANA_CLIENT_ID,
         'Request-Id': crypto.randomUUID(),
         'Timestamp': timestamp,
         'Signature': signature,
@@ -225,8 +225,8 @@ export default async function handler(req, res) {
     });
 
     const paymentResponseText = await response.text();
-    console.log('DANA Payment Response Status:', response.status);
-    console.log('DANA Payment Response Text:', paymentResponseText.substring(0, 500));
+    console.log('Payment Response Status:', response.status);
+    console.log('Payment Response Text:', paymentResponseText.substring(0, 300));
     
     let paymentResponse;
     try {
