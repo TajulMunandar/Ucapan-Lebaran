@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.99.3",
     "@tailwindcss/postcss": "^4.2.2",
+    "dana-node": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
     "pg": "^8.20.0",
