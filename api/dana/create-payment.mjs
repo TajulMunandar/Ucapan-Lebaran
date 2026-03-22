@@ -5,18 +5,16 @@
  * Creates a DANA payment order and returns the payment URL
  */
 
-// Debug: Log all env vars (without secrets)
-console.log('Environment check:', {
-  DANA_API_BASE_URL: process.env.DANA_API_BASE_URL ? 'set' : 'missing',
-  MERCHANT_ID: process.env.DANA_MERCHANT_ID ? 'set' : 'missing',
-  CLIENT_ID: process.env.DANA_CLIENT_ID ? 'set' : 'missing',
-  CLIENT_SECRET: process.env.DANA_CLIENT_SECRET ? 'set' : 'missing',
-  SUPABASE_URL: process.env.SUPABASE_URL ? 'set' : 'missing',
-  SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'missing',
-});
+// Debug: Log all env vars
+console.log('=== CREATE PAYMENT API ===');
+console.log('DANA_API_BASE_URL:', process.env.DANA_API_BASE_URL);
+console.log('DANA_MERCHANT_ID:', process.env.DANA_MERCHANT_ID ? 'SET' : 'MISSING');
+console.log('DANA_CLIENT_ID:', process.env.DANA_CLIENT_ID ? 'SET' : 'MISSING');
+console.log('DANA_CLIENT_SECRET:', process.env.DANA_CLIENT_SECRET ? 'SET' : 'MISSING');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET' : 'MISSING');
+console.log('SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'MISSING');
 
 import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
 
 const DANA_API_BASE_URL = process.env.DANA_API_BASE_URL || 'https://api.sandbox.dana.id';
 const MERCHANT_ID = process.env.DANA_MERCHANT_ID;
@@ -38,8 +36,9 @@ function validateEnv() {
   if (!SUPABASE_SERVICE_KEY) missing.push('SUPABASE_SERVICE_KEY');
   
   if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+    return { valid: false, missing };
   }
+  return { valid: true };
 }
 
 /**
@@ -58,6 +57,7 @@ function generateSignature(payload, timestamp) {
  * Create Supabase admin client
  */
 function createSupabaseClient() {
+  const { createClient } = require('@supabase/supabase-js');
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
@@ -120,7 +120,13 @@ export default async function handler(req, res) {
 
   try {
     // Validate environment variables first
-    validateEnv();
+    const envCheck = validateEnv();
+    if (!envCheck.valid) {
+      return res.status(500).json({ 
+        error: 'Configuration error',
+        message: `Missing environment variables: ${envCheck.missing.join(', ')}`
+      });
+    }
     
     const { greetingId, slug } = req.body;
 
@@ -131,7 +137,8 @@ export default async function handler(req, res) {
     console.log('Creating DANA payment for greeting:', greetingId);
 
     // Get Supabase client
-    const supabase = createSupabaseClient();
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Fetch greeting to verify it exists
     const { data: greeting, error: fetchError } = await supabase
@@ -173,7 +180,7 @@ export default async function handler(req, res) {
       merchantExtendInfo: {
         merchantName: 'Ucapan Lebaran',
       },
-      merchantOrderId: greetingId, // This maps to our greeting ID
+      merchantOrderId: greetingId,
     };
 
     // Generate signature
@@ -238,7 +245,9 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Error creating payment:', error);
+    console.error('=== ERROR CREATING PAYMENT ===');
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
     return res.status(500).json({ 
       error: 'Internal server error',
       message: error.message,
