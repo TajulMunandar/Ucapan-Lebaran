@@ -62,10 +62,17 @@ async function getDanaClient() {
   process.env.X_PARTNER_ID = DANA_CLIENT_ID;
   process.env.ENV = ENV;
   
+  console.log('DANA Environment:');
+  console.log('- PRIVATE_KEY set:', !!process.env.PRIVATE_KEY);
+  console.log('- ORIGIN:', process.env.ORIGIN);
+  console.log('- X_PARTNER_ID:', process.env.X_PARTNER_ID);
+  console.log('- ENV:', process.env.ENV);
+  
   // Use the named export 'Dana' from dana-node
   const { Dana } = await import('dana-node');
   
   const dana = new Dana();
+  console.log('DANA client created with opts:', dana.opts);
   
   return dana;
 }
@@ -129,22 +136,61 @@ export default async function handler(req, res) {
 
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
+    
+    // Calculate validUpTo (30 minutes from now) - must be in ISO format with +07:00
+    const validUpTo = new Date(Date.now() + 30 * 60 * 1000).toISOString().replace('Z', '+07:00');
 
-    // Create DANA payment request using library
+    // Create DANA payment request using correct API format
     const paymentRequest = {
-      orderNo: orderId,
-      totalAmount: PRICE_IDR.toString(),
-      subject: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
-      body: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`,
-      notifyUrl: `${SITE_URL}/api/dana/finish`,
-      callbackUrl: `${SITE_URL}/success?order_id=${orderId}&greeting_id=${greetingId}`,
+      partnerReferenceNo: orderId,
       merchantId: DANA_MERCHANT_ID,
+      amount: {
+        value: PRICE_IDR.toString(),
+        currency: 'IDR'
+      },
+      validUpTo: validUpTo,
+      payOptionDetails: [
+        {
+          payMethod: 'BALANCE',
+          payOption: 'NETWORK_PAY_PG_SPAY',
+          transAmount: {
+            value: PRICE_IDR.toString(),
+            currency: 'IDR'
+          }
+        }
+      ],
+      urlParams: [
+        {
+          url: `${SITE_URL}/success?order_id=${orderId}&greeting_id=${greetingId}`,
+          type: 'PAY_RETURN',
+          isDeeplink: false
+        },
+        {
+          url: `${SITE_URL}/api/dana/finish`,
+          type: 'NOTIFICATION',
+          isDeeplink: false
+        }
+      ],
+      additionalInfo: {
+        merchantName: 'Ucapan Lebaran',
+        orderDescription: `Pembayaran Ucapan Lebaran untuk ${greeting.receiver_name}`
+      }
     };
 
     console.log('Payment request:', JSON.stringify(paymentRequest));
 
     // Create payment using DANA library
-    const paymentResponse = await dana.paymentGatewayApi.createOrder(paymentRequest);
+    let paymentResponse;
+    try {
+      paymentResponse = await dana.paymentGatewayApi.createOrder(paymentRequest);
+    } catch (error) {
+      console.error('DANA API Error:', error);
+      // Try to get more error details
+      if (error.response) {
+        console.error('Error response:', error.response);
+      }
+      throw error;
+    }
     
     console.log('Payment Response:', JSON.stringify(paymentResponse).substring(0, 500));
 
