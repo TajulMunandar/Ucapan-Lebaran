@@ -15,6 +15,8 @@ const DANA_CLIENT_SECRET_VAL = process.env.DANA_CLIENT_SECRET;
 const SUPABASE_URL_VAL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY_VAL = process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.SITE_URL || 'https://ucapan-lebaran-nine.vercel.app';
+// DANA Private Key for RSA signing (from environment variable)
+const DANA_PRIVATE_KEY = process.env.DANA_PRIVATE_KEY;
 
 console.log('Environment check:');
 console.log('- DANA_API_BASE_URL:', DANA_API_BASE_URL ? `SET (${DANA_API_BASE_URL})` : 'MISSING');
@@ -29,8 +31,7 @@ import crypto from 'crypto';
 import http from 'http';
 import https from 'https';
 
-// DANA Private Key for RSA signing (from environment variable)
-const DANA_PRIVATE_KEY = process.env.DANA_PRIVATE_KEY;
+
 
 /**
  * Convert base64 private key to PEM format
