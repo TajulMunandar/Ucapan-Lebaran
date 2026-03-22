@@ -45,7 +45,7 @@ function validateEnv() {
  * Generate DANA signature
  */
 function generateSignature(payload, timestamp) {
-  const signaturePayload = `POST${DANA_API_BASE_URL}/v2.0/payment/gateway/create*${JSON.stringify(payload)}*${timestamp}`;
+  const signaturePayload = `POST${DANA_API_BASE_URL}/v2.0/oauth/authorize*${JSON.stringify(payload)}*${timestamp}`;
   const signature = crypto
     .createHmac('sha256', CLIENT_SECRET)
     .update(signaturePayload)
@@ -54,11 +54,15 @@ function generateSignature(payload, timestamp) {
 }
 
 /**
- * Create Supabase admin client
+ * Generate payment signature
  */
-function createSupabaseClient() {
-  const { createClient } = require('@supabase/supabase-js');
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+function generatePaymentSignature(payload, timestamp) {
+  const signaturePayload = `POST${DANA_API_BASE_URL}/v2.0/payment/gateway/create*${JSON.stringify(payload)}*${timestamp}`;
+  const signature = crypto
+    .createHmac('sha256', CLIENT_SECRET)
+    .update(signaturePayload)
+    .digest('hex');
+  return signature;
 }
 
 /**
@@ -80,6 +84,12 @@ async function getDanaAccessToken() {
     .update(signaturePayload)
     .digest('hex');
 
+  console.log('DANA OAuth Request:', {
+    url: `${DANA_API_BASE_URL}/v2.0/oauth/authorize`,
+    payload,
+    signature: signature.substring(0, 20) + '...'
+  });
+
   const response = await fetch(`${DANA_API_BASE_URL}/v2.0/oauth/authorize`, {
     method: 'POST',
     headers: {
@@ -92,12 +102,25 @@ async function getDanaAccessToken() {
     body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  console.log('DANA OAuth Response Status:', response.status);
+  const responseText = await response.text();
+  console.log('DANA OAuth Response Text:', responseText.substring(0, 500));
   
-  console.log('DANA OAuth response:', JSON.stringify(data));
+  if (!responseText || responseText.trim() === '') {
+    throw new Error('Empty response from DANA OAuth endpoint');
+  }
+
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (parseError) {
+    throw new Error(`Failed to parse DANA OAuth response: ${responseText.substring(0, 200)}`);
+  }
+  
+  console.log('DANA OAuth parsed response:', JSON.stringify(data));
   
   if (data.resultCode !== '2000000') {
-    throw new Error(`DANA auth failed: ${data.resultMsg || 'Unknown error'}`);
+    throw new Error(`DANA auth failed: ${data.resultMsg || 'Unknown error'} (code: ${data.resultCode})`);
   }
 
   return data.accessToken;
@@ -159,6 +182,7 @@ export default async function handler(req, res) {
 
     // Get DANA access token
     const accessToken = await getDanaAccessToken();
+    console.log('Got DANA access token');
 
     // Generate order ID
     const orderId = `ORD-${greetingId.slice(0, 8)}-${Date.now()}`;
@@ -184,7 +208,7 @@ export default async function handler(req, res) {
     };
 
     // Generate signature
-    const signature = generateSignature(paymentRequest, timestamp);
+    const signature = generatePaymentSignature(paymentRequest, timestamp);
 
     // Call DANA API
     const response = await fetch(`${DANA_API_BASE_URL}/v2.0/payment/gateway/create`, {
@@ -200,8 +224,16 @@ export default async function handler(req, res) {
       body: JSON.stringify(paymentRequest),
     });
 
-    const paymentResponse = await response.json();
-    console.log('DANA payment response:', JSON.stringify(paymentResponse));
+    const paymentResponseText = await response.text();
+    console.log('DANA Payment Response Status:', response.status);
+    console.log('DANA Payment Response Text:', paymentResponseText.substring(0, 500));
+    
+    let paymentResponse;
+    try {
+      paymentResponse = JSON.parse(paymentResponseText);
+    } catch (e) {
+      throw new Error(`Failed to parse DANA payment response: ${paymentResponseText.substring(0, 200)}`);
+    }
 
     if (paymentResponse.resultCode !== '2000000') {
       console.error('DANA payment creation failed:', paymentResponse.resultMsg);
